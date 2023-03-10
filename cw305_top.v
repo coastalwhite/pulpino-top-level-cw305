@@ -63,20 +63,6 @@ module cw305_top #(
     output wire                         tio_trigger,
     output wire                         tio_clkout,
     input  wire                         tio_clkin
-
-    // Block Interface to Crypto Core
-`ifdef USE_BLOCK_INTERFACE
-   ,output wire                         crypto_clk,
-    output wire                         crypto_rst,
-    output wire [pPT_WIDTH-1:0]         crypto_textout,
-    output wire [pKEY_WIDTH-1:0]        crypto_keyout,
-    input  wire [pCT_WIDTH-1:0]         crypto_cipherin,
-    output wire                         crypto_start,
-    input wire                          crypto_ready,
-    input wire                          crypto_done,
-    input wire                          crypto_busy,
-    input wire                          crypto_idle
-`endif
     );
 
 
@@ -188,23 +174,6 @@ module cw305_top #(
        .O_cw_clkout             (tio_clkout),
        .O_cryptoclk             (pulpino_clk)
     );
-
-
-
-  // Block interface is used by the IP Catalog. If you are using block-based
-  // design define USE_BLOCK_INTERFACE.
-`ifdef USE_BLOCK_INTERFACE
-    assign crypto_clk = crypt_clk;
-    assign crypto_rst = crypt_init;
-    assign crypto_keyout = crypt_key;
-    assign crypto_textout = crypt_textout;
-    assign crypt_cipherin = crypto_cipherin;
-    assign crypto_start = crypt_start;
-    assign crypt_ready = crypto_ready;
-    assign crypt_done = crypto_done;
-    assign crypt_busy = crypto_busy;
-    assign tio_trigger = ~crypto_idle;
-`endif
 
   // START CRYPTO MODULE CONNECTIONS
   // The following can have your crypto module inserted.
