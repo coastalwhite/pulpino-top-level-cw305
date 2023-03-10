@@ -1,0 +1,6 @@
+[verilog]
+include_paths = ["."]
+defines = ["DEBUG"]
+
+[option]
+linter = false
