@@ -149,14 +149,14 @@ module cw305_top #(
 
        .exttrigger_in           (usb_trigger),
 
-	   .I_writedata				(writedata),
+	   .I_writedata				(write_data),
        .I_textout               (128'b0),               // unused
        .I_cipherout             (crypt_cipherin),
        .I_ready                 (crypt_ready),
        .I_done                  (crypt_done),
        .I_busy                  (crypt_busy),
 
-	   .O_readdata				(readdata),
+	   .O_readdata				(read_data),
        .O_clksettings           (clk_settings),
        .O_user_led              (led3),
        .O_key                   (crypt_key),
