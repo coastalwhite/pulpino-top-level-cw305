@@ -200,7 +200,7 @@ module cw305_top #(
 
     assign gpio_dir      = 32'h0000_0000;
     assign gpio_in       = {
-        21'b0, data_in_io_turn, data_out_io_turn, gpio_data_in
+        21'b0, data_out_io_turn, data_in_io_turn, gpio_data_in
     };
 
     assign data_out_pulpino_turn = gpio_out[11:10];
