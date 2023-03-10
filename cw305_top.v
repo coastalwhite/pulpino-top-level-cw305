@@ -179,6 +179,53 @@ module cw305_top #(
        .O_cryptoclk             (pulpino_clk)
     );
 
+    wire [31:0] gpio_dir;
+    wire [31:0] gpio_in;
+    wire [31:0] gpio_out;
+
+    reg  [7:0]  gpio_data_in;
+    wire [1:0]  data_in_pulpino_turn;
+    wire [1:0]  data_in_io_turn;
+    wire        data_in_done;
+
+    wire [7:0]  gpio_data_out;
+    wire [1:0]  data_out_pulpino_turn;
+    wire        data_out_io_turn;
+    wire        data_out_done;
+
+    assign gpio_dir      = 32'h0000_0000;
+    assign gpio_in       = {
+        21'b0, data_in_io_turn, data_out_io_turn, gpio_data_in
+    };
+
+    assign data_out_pulpino_turn = gpio_out[11:10];
+    assign data_in_pulpino_turn = gpio_out[9:8];
+    assign gpio_data_out = gpio_out[7:0];
+
+    gpio_pulpino_comm inst (
+        .reset_i                       (reset),
+
+        // USB -> Pulpino
+        .read_data                     (read_data),
+        .gpio_data_in                  (gpio_data_in),
+        .data_in_io_turn               (data_in_io_turn),
+        .data_in_pulpino_turn          (data_in_pulpino_turn),
+
+        .data_in_done                  (data_in_done),
+
+        .do_read                       (do_read),
+
+        // Pulpino -> USB
+        .write_data                    (write_data),
+        .gpio_data_out                 (gpio_data_out),
+        .data_out_io_turn              (data_out_io_turn),
+        .data_out_pulpino_turn         (data_out_pulpino_turn),
+    
+        .data_out_done                 (data_out_done),
+    
+        .clk                           (pulpino_clk)
+    );
+
   // START CRYPTO MODULE CONNECTIONS
   // The following can have your crypto module inserted.
   // This is an example of the Google Vault AES module.
