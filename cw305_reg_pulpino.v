@@ -60,6 +60,7 @@ module cw305_reg_pulpino #(
    input  wire                                  exttrigger_in,
 
 // register inputs:
+   input  wire [31:0]                  			I_write_data,
    input  wire [pPT_WIDTH-1:0]                  I_textout,
    input  wire [pCT_WIDTH-1:0]                  I_cipherout,
    input  wire                                  I_ready,  /* Crypto core ready. Tie to '1' if not used. */
@@ -67,6 +68,7 @@ module cw305_reg_pulpino #(
    input  wire                                  I_busy,   /* Crypto busy. */
 
 // register outputs:
+   output reg  [31:0]                  			O_read_data,
    output reg  [4:0]                            O_clksettings,
    output reg                                   O_user_led,
    output wire [pKEY_WIDTH-1:0]                 O_key,
@@ -143,6 +145,8 @@ module cw305_reg_pulpino #(
             `REG_CRYPT_TEXTOUT:         reg_read_data = reg_crypt_textout_usb[reg_bytecnt*8 +: 8];
             `REG_CRYPT_CIPHEROUT:       reg_read_data = reg_crypt_cipherout_usb[reg_bytecnt*8 +: 8];
             `REG_BUILDTIME:             reg_read_data = buildtime[reg_bytecnt*8 +: 8];
+            `REG_READ_DATA:             reg_read_data = O_read_data;
+            `REG_WRITE_DATA:            reg_read_data = I_write_data;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -173,6 +177,7 @@ module cw305_reg_pulpino #(
                `REG_CRYPT_TEXTIN:       reg_crypt_textin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_CIPHERIN:     reg_crypt_cipherin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_KEY:          reg_crypt_key[reg_bytecnt*8 +: 8] <= write_data;
+			   `REG_READ_DATA:          O_read_data <= write_data;
             endcase
          end
          // REG_CRYPT_GO register is special: writing it creates a pulse. Reading it gives you the "busy" status.

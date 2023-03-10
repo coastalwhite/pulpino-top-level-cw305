@@ -46,5 +46,7 @@ either expressed or implied, of NewAE Technology Inc.
 `define REG_CRYPT_CIPHEROUT             'h09
 `define REG_CRYPT_KEY                   'h0a
 `define REG_BUILDTIME                   'h0b
+`define REG_READ_DATA                   'h0c
+`define REG_WRITE_DATA                  'h0d
 
 
