@@ -93,6 +93,7 @@ module cw305_top #(
 
 	wire [31:0] write_data;
 	wire [31:0] read_data;
+	wire [31:0] data_ctrl;
 
     // USB CLK Heartbeat
     reg [24:0] usb_timer_heartbeat;
@@ -149,14 +150,15 @@ module cw305_top #(
 
        .exttrigger_in           (usb_trigger),
 
-	   .I_writedata				(write_data),
+	   .I_write_data			(write_data),
+	   .I_data_ctrl				(write_ctrl),
        .I_textout               (128'b0),               // unused
        .I_cipherout             (crypt_cipherin),
        .I_ready                 (crypt_ready),
        .I_done                  (crypt_done),
        .I_busy                  (crypt_busy),
 
-	   .O_readdata				(read_data),
+	   .O_read_data				(read_data),
        .O_clksettings           (clk_settings),
        .O_user_led              (led3),
        .O_key                   (crypt_key),

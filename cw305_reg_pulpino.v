@@ -61,6 +61,7 @@ module cw305_reg_pulpino #(
 
 // register inputs:
    input  wire [31:0]                  			I_write_data,
+   input  wire [31:0]                  			I_data_ctrl,
    input  wire [pPT_WIDTH-1:0]                  I_textout,
    input  wire [pCT_WIDTH-1:0]                  I_cipherout,
    input  wire                                  I_ready,  /* Crypto core ready. Tie to '1' if not used. */
@@ -147,6 +148,7 @@ module cw305_reg_pulpino #(
             `REG_BUILDTIME:             reg_read_data = buildtime[reg_bytecnt*8 +: 8];
             `REG_READ_DATA:             reg_read_data = O_read_data;
             `REG_WRITE_DATA:            reg_read_data = I_write_data;
+            `REG_DATA_CTRL:             reg_read_data = I_data_ctrl;
             default:                    reg_read_data = 0;
          endcase
       end
