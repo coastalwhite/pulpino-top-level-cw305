@@ -77,7 +77,72 @@ module dummy_pulpino(
 
   assign tdo_o <= 0'b1;
 
-  initial gpio_out <= 32'b0;
+  reg [63:0] internal_memory;
+
+  initial begin
+      gpio_out        <= 32'b0;
+      internal_memory <= 64'h1234_abcd_1337_4242;
+  end
+
+  reg [2:0] read_counter;
+  reg       read_known_io_turn;
+  wire      read_io_turn;
+  assign    read_io_turn = gpio_in[8];
+
+  reg [2:0] write_counter;
+  reg       write_known_io_turn;
+  wire      write_io_turn;
+  assign    write_io_turn = gpio_in[10];
+
+  always @ (posedge pulpino_clk) begin
+      if (!rst_n) begin
+          gpio_out        <= 32'b0;
+          internal_memory <= 64'h1234_abcd_1337_4242;
+      end 
+      else if (do_read || read_counter[2] == 1'b1) begin
+              if (do_read) gpio_out[9] <= 1'b0;
+
+              read_counter[2] <= 1'b1;
+
+              if (read_io_turn != read_known_io_turn) begin
+                  gpio_out[7:0] <= internal_memory[7:0];
+                  internal_memory <= internal_memory >> 8;
+                  gpio_out[8] <= !gpio_out[8];
+
+                  if ( read_counter[1:0] == 2'b11 ) begin
+                      read_counter <= 3'b000;
+                      gpio_out[9] <= 1'b1;
+                  end
+                  else begin
+                      read_counter <= read_counter + 1;
+                  end
+              end
+
+              read_known_io_turn <= read_io_turn;
+          end
+      else if (write_counter[2] == 1'b1) begin
+          if (write_counter[1:0] == 2'b00) gpio_out[11] <= 1'b0;
+
+          if (write_io_turn != write_known_io_turn) begin
+              internal_memory <= { gpio_in[7:0], internal_memory[63:8] };
+              gpio_out[10] <= !gpio_out[10];
+
+              if ( write_counter[1:0] == 2'b11 ) begin
+                  write_counter <= 3'b000;
+                  gpio_out[11] <= 1'b1;
+              end
+              else begin
+                  write_counter <= write_counter + 1;
+              end
+          end
+
+          read_known_io_turn <= read_io_turn;
+      end
+      else begin
+          if ( gpio_in[11] == 1'b1 )
+              write_counter <= 3'b100;
+      end
+  end
 endmodule
 
 `default_nettype wire
