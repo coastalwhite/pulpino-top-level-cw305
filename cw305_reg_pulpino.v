@@ -75,7 +75,9 @@ module cw305_reg_pulpino #(
    output wire [pKEY_WIDTH-1:0]                 O_key,
    output wire [pPT_WIDTH-1:0]                  O_textin,
    output wire [pCT_WIDTH-1:0]                  O_cipherin,
-   output wire                                  O_start   /* High for one crypto_clk cycle, indicates text ready. */
+   output wire                                  O_start,   /* High for one crypto_clk cycle, indicates text ready. */
+
+   output wire                                  O_do_read
 
 );
 
@@ -103,6 +105,16 @@ module cw305_reg_pulpino #(
    (* ASYNC_REG = "TRUE" *) reg  [1:0] go_pipe;
    (* ASYNC_REG = "TRUE" *) reg  [1:0] busy_pipe;
 
+   reg                          do_read;
+   reg [1:0]                    do_read_counter;
+
+   initial do_read <= 1'b0;
+   always @ (posedge crypto_clk) begin
+       if ( do_read_counter == 2'b00 )
+           do_read <= 1'b0;
+       else
+           do_read <= 1'b1;
+   end
 
    always @(posedge crypto_clk) begin
        done_r <= I_done & pDONE_EDGE_SENSITIVE;
@@ -187,6 +199,13 @@ module cw305_reg_pulpino #(
             reg_crypt_go_pulse <= 1'b1;
          else
             reg_crypt_go_pulse <= 1'b0;
+
+         if ( (reg_addrvalid && reg_write && (reg_address == `REG_CRYPT_GO)) )
+             do_read_counter <= 2'b11;
+         else begin
+             if ( do_read_counter != 2'b00 )
+                 do_read_counter <= do_read_counter - 1;
+         end
       end
    end
 

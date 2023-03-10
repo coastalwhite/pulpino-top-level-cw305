@@ -95,6 +95,8 @@ module cw305_top #(
 	wire [31:0] read_data;
 	wire [31:0] data_ctrl;
 
+    wire        do_read;
+
     // USB CLK Heartbeat
     reg [24:0] usb_timer_heartbeat;
     always @(posedge usb_clk_buf) usb_timer_heartbeat <= usb_timer_heartbeat +  25'd1;
@@ -164,7 +166,8 @@ module cw305_top #(
        .O_key                   (crypt_key),
        .O_textin                (crypt_textout),
        .O_cipherin              (),                     // unused
-       .O_start                 (crypt_start)
+       .O_start                 (crypt_start),
+       .O_do_read               (do_read)
     );
 
     assign usb_data = isout? usb_dout : 8'bZ;
