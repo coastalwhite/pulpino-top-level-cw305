@@ -49,5 +49,6 @@ either expressed or implied, of NewAE Technology Inc.
 `define REG_READ_DATA                   'h0c
 `define REG_WRITE_DATA                  'h0d
 `define REG_DATA_CTRL                   'h0e
+`define REG_DATA_STATUS                 'h0f
 
 

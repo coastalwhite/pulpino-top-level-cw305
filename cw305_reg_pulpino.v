@@ -70,6 +70,7 @@ module cw305_reg_pulpino #(
 
 // register outputs:
    output reg  [31:0]                  			O_read_data,
+   output reg  [31:0]                  			O_data_status,
    output reg  [4:0]                            O_clksettings,
    output reg                                   O_user_led,
    output wire [pKEY_WIDTH-1:0]                 O_key,
@@ -161,6 +162,7 @@ module cw305_reg_pulpino #(
             `REG_READ_DATA:             reg_read_data = O_read_data;
             `REG_WRITE_DATA:            reg_read_data = I_write_data;
             `REG_DATA_CTRL:             reg_read_data = I_data_ctrl;
+            `REG_DATA_STATUS:           reg_read_data = O_data_status;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -192,6 +194,7 @@ module cw305_reg_pulpino #(
                `REG_CRYPT_CIPHERIN:     reg_crypt_cipherin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_KEY:          reg_crypt_key[reg_bytecnt*8 +: 8] <= write_data;
 			   `REG_READ_DATA:          O_read_data <= write_data;
+			   `REG_DATA_STATUS:        O_data_status <= write_data;
             endcase
          end
          // REG_CRYPT_GO register is special: writing it creates a pulse. Reading it gives you the "busy" status.

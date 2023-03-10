@@ -94,6 +94,7 @@ module cw305_top #(
 	wire [31:0] write_data;
 	wire [31:0] read_data;
 	wire [31:0] data_ctrl;
+	wire [31:0] data_status;
 
     wire        do_read;
 
@@ -198,9 +199,19 @@ module cw305_top #(
     wire        data_out_io_turn;
     wire        data_out_done;
 
+    wire        waiting_for_read;
+
+    assign data_in_done     = data_ctrl[0];
+    assign data_out_done    = data_ctrl[1];
+    assign waiting_for_read = data_status[0];
+
     assign gpio_dir      = 32'h0000_0000;
     assign gpio_in       = {
-        21'b0, data_out_io_turn, data_in_io_turn, gpio_data_in
+        20'b0,
+        waiting_for_read,
+        data_out_io_turn,
+        data_in_io_turn,
+        gpio_data_in
     };
 
     assign data_out_pulpino_turn = gpio_out[11:10];
