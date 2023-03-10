@@ -100,7 +100,7 @@ module cw305_top #(
     wire reg_read;
     wire reg_write;
     wire [4:0] clk_settings;
-    wire crypt_clk;    
+    wire pulpino_clk;    
 
     wire resetn = pushbutton;
     wire reset = !resetn;
@@ -112,9 +112,9 @@ module cw305_top #(
     assign led1 = usb_timer_heartbeat[24];
 
     // CRYPT CLK Heartbeat
-    reg [22:0] crypt_clk_heartbeat;
-    always @(posedge crypt_clk) crypt_clk_heartbeat <= crypt_clk_heartbeat +  23'd1;
-    assign led2 = crypt_clk_heartbeat[22];
+    reg [20:0] pulpino_clk_heartbeat;
+    always @(posedge pulpino_clk) pulpino_clk_heartbeat <= pulpino_clk_heartbeat +  23'd1;
+    assign led2 = pulpino_clk_heartbeat[20];
 
 
     cw305_usb_reg_fe #(
@@ -141,13 +141,13 @@ module cw305_top #(
     );
 
 
-    cw305_reg_aes #(
+    cw305_reg_pulpino #(
        .pBYTECNT_SIZE           (pBYTECNT_SIZE),
        .pADDR_WIDTH             (pADDR_WIDTH),
        .pPT_WIDTH               (pPT_WIDTH),
        .pCT_WIDTH               (pCT_WIDTH),
        .pKEY_WIDTH              (pKEY_WIDTH)
-    ) U_reg_aes (
+    ) U_reg_pulpino (
        .reset_i                 (reset),
        .crypto_clk              (crypt_clk),
        .usb_clk                 (usb_clk_buf), 
@@ -177,7 +177,6 @@ module cw305_top #(
 
     assign usb_data = isout? usb_dout : 8'bZ;
 
-
     clocks U_clocks (
        .usb_clk                 (usb_clk),
        .usb_clk_buf             (usb_clk_buf),
@@ -187,7 +186,7 @@ module cw305_top #(
        .I_cw_clkin              (tio_clkin),
        .I_pll_clk1              (pll_clk1),
        .O_cw_clkout             (tio_clkout),
-       .O_cryptoclk             (crypt_clk)
+       .O_cryptoclk             (pulpino_clk)
     );
 
 

@@ -30,7 +30,7 @@ either expressed or implied, of NewAE Technology Inc.
 `timescale 1ns / 1ps
 `include "cw305_defines.v"
 
-module cw305_reg_aes #(
+module cw305_reg_pulpino #(
    parameter pADDR_WIDTH = 21,
    parameter pBYTECNT_SIZE = 7,
    parameter pDONE_EDGE_SENSITIVE = 1,
@@ -42,7 +42,7 @@ module cw305_reg_aes #(
    parameter pIDENTIFY = 8'h2e
 )(
 
-// Interface to cw305_usb_reg_fe:
+// Interface to cw305_usb_pulpino_fe:
    input  wire                                  usb_clk,
    input  wire                                  crypto_clk,
    input  wire                                  reset_i,
