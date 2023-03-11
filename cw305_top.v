@@ -222,7 +222,7 @@ module cw305_top #(
     assign data_in_pulpino_turn = gpio_out[9:8];
     assign gpio_data_out = gpio_out[7:0];
 
-    gpio_pulpino_comm inst (
+    usb_pulpino_channel inst (
         .reset_i                       (reset),
 
         // USB -> Pulpino

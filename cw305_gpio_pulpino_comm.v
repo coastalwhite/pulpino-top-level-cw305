@@ -1,109 +1,104 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-module gpio_pulpino_comm (
+module usb_pulpino_channel (
     input  wire          reset_i,
 
     // USB -> Pulpino
-    input  wire [31:0]   read_data,
-    output wire [7:0]    gpio_data_in,
-    output reg  [1:0]    data_in_io_turn,
-    input  wire [1:0]    data_in_pulpino_turn,
-
-    output reg           data_in_done,
-
-    input  wire          do_read,
+    input  wire [31:0]   usb_to_pulpino_reg,
+    output wire [7:0]    usb_to_pulpino_data,
+	input wire			 usb_to_pulpino_read_reg, // Read the Ext register?
 
     // Pulpino -> USB
-    output wire [31:0]   write_data,
-    input  wire [7:0]    gpio_data_out,
-    output reg           data_out_io_turn,
-    input  wire [1:0]    data_out_pulpino_turn,
+    output reg [31:0]    pulpino_to_usb_reg,
+    input  wire [7:0]    pulpino_to_usb_data,
 
-    output reg           data_out_done,
+	output reg  		 usb_read_flicker,
+	output reg 			 usb_write_flicker,
 
-    output wire          ext_read_is_serviced,
-    output wire          ext_write_is_serviced,
-
-    output wire          pulpino_read_is_serviced,
-    output wire          pulpino_write_is_serviced,
+	input wire			 pulpino_read_flicker,
+	input wire			 pulpino_write_flicker,
 
     input  wire          clk
 );
-    reg [31:0]           data_in;
-    reg [31:0]           data_out;
+    reg [31:0]           int_usb_to_pulpino_reg;
 
-    reg                  data_in_pulpino_known_turn;
-    reg                  data_out_pulpino_known_turn;
+    reg                  known_pulpino_read_flicker;
+    reg                  known_pulpino_write_flicker;
 
-    reg                  read_cleared;
+	reg					 usb_to_pulpino_has_read;
 
-    assign gpio_data_in  = data_in[7:0];
-    assign write_data    = data_out;
+	reg [1:0]			 usb_to_pulpino_byte_counter;
+
+    assign usb_to_pulpino_data  = int_usb_to_pulpino_reg[7:0];
 
     initial begin
-        data_in          <= 32'b0;
-        data_in_io_turn  <=  2'b0;
-        data_in_done     <=  1'b0;
-        data_out         <= 32'b0;
-        data_out_io_turn <=  1'b0;
-        data_out_done    <=  1'b0;
-        read_cleared     <=  1'b1;
+        int_usb_to_pulpino_reg      <= 32'b0;
+        pulpino_to_usb_reg          <= 32'b0;
+
+		usb_read_flicker            <= 1'b0;
+		usb_write_flicker           <= 1'b0;
+
+		known_pulpino_read_flicker  <= 1'b0;
+		known_pulpino_write_flicker <= 1'b0;
+
+		usb_to_pulpino_has_read     <= 1'b0;
+	    usb_to_pulpino_byte_counter <= 2'b0;
     end
 
+	// USB -> Pulpino
     always @ (posedge clk) begin
         if (reset_i) begin
-            data_in         <= 32'b0;
-            data_in_io_turn <=  2'b0;
-            data_in_done    <=  1'b0;
-            read_cleared    <=  1'b1;
+			int_usb_to_pulpino_reg      <= 32'b0;
+
+			usb_write_flicker           <= 1'b0;
+			known_pulpino_read_flicker  <= 1'b0;
+
+			usb_to_pulpino_has_read     <= 1'b0;
+			usb_to_pulpino_byte_counter <= 2'b0;
         end
         else begin
-            if (do_read == 1'b1 && read_cleared == 1'b1) begin
-                read_cleared      <= 1'b0;
-                data_in           <= read_data;
-                data_in_io_turn   <= 2'b11;
+			// Read USB register. Start the Write to Pulpino
+			if (usb_to_pulpino_read_reg == 1'b1) begin
+				if (usb_to_pulpino_has_read == 1'b0) begin
+					usb_to_pulpino_has_read <= 1'b1;
+					int_usb_to_pulpino_reg <= usb_to_pulpino_reg;
+					usb_write_flicker <= ~usb_write_flicker;
+				end
             end
             else begin
-                if (do_read == 1'b0 && read_cleared == 1'b0) begin
-                    read_cleared  <= 1'b1;
-                end
+				usb_to_pulpino_has_read <= 1'b0;
 
-                if (data_in_pulpino_turn[0] != data_in_pulpino_known_turn) begin
-                    if (data_in_pulpino_turn[1]) begin
-                        data_in_done <= !data_in_done;
-                    end
-                    else begin
-                        data_in_io_turn[1] <= 1'b0;
-                        data_in_io_turn[0] <= !data_in_io_turn[0];
-                        data_in <= data_in >> 8;
-                    end
-                end
-            end
+				// Byte by byte write to pulpino
+				if (pulpino_read_flicker != known_pulpino_read_flicker) begin
+					int_usb_to_pulpino_reg <= int_usb_to_pulpino_reg >> 8;
+					usb_to_pulpino_byte_counter <= usb_to_pulpino_byte_counter + 1;
 
-            data_in_pulpino_known_turn <= data_in_pulpino_turn[0];
-        end
-    end
+					// Don't flicker if we are on the last byte
+					if (usb_to_pulpino_byte_counter != 2'b11) begin
+						usb_write_flicker <= ~usb_write_flicker;
+					end
+                    known_pulpino_read_flicker <= pulpino_read_flicker;
+				end
+			end
+		end
+	end
 
+	// Pulpino -> USB
     always @ (posedge clk) begin
         if (reset_i) begin
-            data_out         <= 32'b0;
-            data_out_io_turn <=  1'b0;
-            data_out_done    <=  1'b0;
+			pulpino_to_usb_reg          <= 32'b0;
+			usb_read_flicker            <= 1'b0;
+			known_pulpino_write_flicker <= 1'b0;
         end
         else begin
-            if (data_out_pulpino_turn[0] != data_out_pulpino_known_turn) begin
-                if (data_out_pulpino_turn[1]) begin
-                    data_out_done <= !data_out_done;
-                end
-
-                data_out      <= {gpio_data_out, data_out[31:8]};
-                data_out_io_turn  <= !data_out_io_turn;
-            end
-
-            data_out_pulpino_known_turn <= data_out_pulpino_turn[0];
-        end
-    end
+			if (pulpino_write_flicker != known_pulpino_write_flicker) begin
+				pulpino_to_usb_reg <= { pulpino_to_usb_data, pulpino_to_usb_reg[31:8] };
+				usb_read_flicker <= !usb_read_flicker;
+                known_pulpino_write_flicker <= pulpino_write_flicker;
+			end
+		end
+	end
 endmodule
 
 `default_nettype wire
