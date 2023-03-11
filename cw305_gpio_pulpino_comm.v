@@ -22,6 +22,12 @@ module gpio_pulpino_comm (
 
     output reg           data_out_done,
 
+    output wire          ext_read_is_serviced,
+    output wire          ext_write_is_serviced,
+
+    output wire          pulpino_read_is_serviced,
+    output wire          pulpino_write_is_serviced,
+
     input  wire          clk
 );
     reg [31:0]           data_in;

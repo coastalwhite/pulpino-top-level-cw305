@@ -25,19 +25,26 @@ module dummy_pulpino_tb();
     wire [31:0] gpio_dir;
     wire [31:0] gpio_in;
 
+    m_gpio_in_output m_gpio_in (
+        .gpio_in          (gpio_in),
+        .data             (gpio_data_in),
+        .read_io_turn     (data_in_io_turn),
+        .read_io_finish   (data_in_done),
+        .write_io_turn  (,
+        data_out_io_turn,
+        write_turn,
+
+    );
     assign gpio_in[7:0] = gpio_data_in;
     assign gpio_in[9:8] = data_in_io_turn;
-    assign gpio_in[11:10] = data_out_io_turn;
-    assign gpio_in[12] = data_in_done;
-    assign gpio_in[13] = data_out_done;
-    assign gpio_in[14] = write_turn;
-    assign gpio_in[31:15] = 17'b0;
+    assign gpio_in[10] = data_out_io_turn;
+    assign gpio_in[13] = write_turn;
+    assign gpio_in[31:14] = 17'b0;
 
     assign gpio_out[7:0] = gpio_data_out;
     assign gpio_out[9:8] = data_in_pulpino_turn;
     assign gpio_out[11:10] = data_out_pulpino_turn;
-    assign gpio_out[12] = read_turn;
-    assign gpio_in[31:13] = 19'b0;
+    assign gpio_in[31:12] = 19'b0;
 
     assign gpio_dir = 32'b0;
 

@@ -54,26 +54,26 @@ module dummy_pulpino(
   
   );
 
-  assign spi_mode_o <= 2'b00;
-  assign spi_sdo0_o <= 1'b0;
-  assign spi_sdo1_o <= 1'b0;
-  assign spi_sdo2_o <= 1'b0;
-  assign spi_sdo3_o <= 1'b0;
+  assign spi_mode_o = 2'b00;
+  assign spi_sdo0_o = 1'b0;
+  assign spi_sdo1_o = 1'b0;
+  assign spi_sdo2_o = 1'b0;
+  assign spi_sdo3_o = 1'b0;
 
-  assign spi_master_clk_o  <= 1'b0;
-  assign spi_master_csn0_o <= 1'b0;
-  assign spi_master_csn1_o <= 1'b0;
-  assign spi_master_sdo0_o <= 1'b0;
+  assign spi_master_clk_o  = 1'b0;
+  assign spi_master_csn0_o = 1'b0;
+  assign spi_master_csn1_o = 1'b0;
+  assign spi_master_sdo0_o = 1'b0;
 
   // Interface UART
-  assign uart_tx  <= 1'b0;
-  assign uart_rts <= 1'b0;
-  assign uart_dtr <= 1'b0;
+  assign uart_tx  = 1'b0;
+  assign uart_rts = 1'b0;
+  assign uart_dtr = 1'b0;
 
-  assign scl_o     <= 1'b0;
-  assign scl_oen_o <= 1'b0;
-  assign sda_o     <= 1'b0;
-  assign sda_oen_o <= 1'b0;
+  assign scl_o     = 1'b0;
+  assign scl_oen_o = 1'b0;
+  assign sda_o     = 1'b0;
+  assign sda_oen_o = 1'b0;
 
   assign tdo_o <= 0'b1;
 
@@ -84,8 +84,8 @@ module dummy_pulpino(
   wire      read_io_turn;
   assign    read_io_turn = gpio_in[8];
 
-  reg       read_pc_turn;
-  assign    gpio_out[12] = read_pc_turn;
+  wire      do_read;
+  assign    do_read      = gpio_in[9];
 
   reg [2:0] write_counter;
   reg       write_known_io_turn;
@@ -93,7 +93,7 @@ module dummy_pulpino(
   assign    write_io_turn = gpio_in[10];
 
   wire      write_pc_turn;
-  assign    write_pc_turn = gpio_in[11];
+  assign    write_pc_turn = gpio_in[13];
   reg       write_known_pc_turn;
 
   initial begin
@@ -101,19 +101,17 @@ module dummy_pulpino(
       internal_memory     <= 64'h1234_abcd_1337_4242;
       read_counter        <= 3'b0;
       read_known_io_turn  <= 1'b0;
-      read_pc_turn        <= 1'b0;
       write_counter       <= 3'b0;
       write_known_io_turn <= 1'b0;
       write_known_pc_turn <= 1'b0;
   end
 
-  always @ (posedge pulpino_clk) begin
+  always @ (posedge clk) begin
       if (!rst_n) begin
           gpio_out            <= 32'b0;
           internal_memory     <= 64'h1234_abcd_1337_4242;
           read_counter        <= 3'b0;
           read_known_io_turn  <= 1'b0;
-          read_pc_turn        <= 1'b0;
           write_counter       <= 3'b0;
           write_known_io_turn <= 1'b0;
           write_known_pc_turn <= 1'b0;
@@ -129,7 +127,6 @@ module dummy_pulpino(
                   gpio_out[8] <= !gpio_out[8];
 
                   if ( read_counter[1:0] == 2'b11 ) begin
-                      read_pc_turn <= ~read_pc_turn;
                       read_counter <= 3'b000;
                       gpio_out[9] <= 1'b1;
                   end
