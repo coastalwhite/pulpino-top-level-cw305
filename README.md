@@ -1,87 +1,17 @@
 # Pulpino Top-Level CW305
 
-## Wire Definitions
+A set of instructions, files and utilities to use the [PULPINO][pulpino] Risc-V
+on a [ChipWhisperer 305][cw305] FPGA. This repository contains 3 main sections:
 
-### `GPIO_IN`
+1. [Setup Instructions](setup/README.md)
+2. [Programming Instructions](program/README.md)
+3. [Modifications & Documentation](mods-and-docs/README.md)
 
-```
-[11]:  ext_read_flicker
-[10]:  ext_write_flicker
-[9]:   usb_read_flicker
-[8]:   usb_write_flicker
-[7:0]: data
-```
+## Contributions
 
-### `GPIO_OUT`
+If you find any mistakes or feel like you improved parts to this repository
+which are useful to others, please consider contributing back to the
+repository.
 
-```
-[11]:  pulpino_usb_read_flicker
-[10]:  pulpino_usb_write_flicker
-[9]:   pulpino_ext_read_flicker
-[8]:   pulpino_ext_write_flicker
-[7:0]: data
-```
-
-## Protocol Definitions
-
-### USB <> Pulpino
-
-```python
-def pulpino_usb_read():
-    word = 0
-
-    for i in range(4):
-        await usb_write_flicker != (i & 1)
-
-        word <<= 8
-        word |= data
-
-        pulpino_usb_read_flicker = !(i & 1)
-    
-    return word
-```
-
-```python
-def pulpino_usb_write(word):
-    for i in range(4):
-        data = word & 0xFF
-        word >>= 8
-
-        pulpino_usb_write_flicker = !(i & 1)
-
-        await usb_read_flicker != (i & 1)
-
-    data = 0x00;
-```
-
-### External <> Pulpino
-
-```python
-def pulpino_ext_read():
-    await ext_write_flicker != 1
-
-    word = pulpino_usb_read()
-
-    pulpino_ext_read_flicker = 1
-    await ext_write_flicker != 0
-    pulpino_ext_read_flicker = 0
-
-    return word
-```
-
-```python
-def pulpino_ext_write(word):
-    pulpino_usb_write(word)
-
-    pulpino_ext_write_flicker = 1
-    await ext_read_flicker != 0
-    pulpino_ext_write_flicker = 0
-```
-
-## TODO
-
-- [x] Rename registers in `cw305_defines.v`
-- [x] Remove many of the unused parts in `cw305_*.v` files
-- [ ] Create Python files
-- [ ] Create C files
-- [ ] Create Rust files
+[pulpino]: https://github.com/pulp-platform/pulpino
+[cw305]: https://www.newae.com/products/NAE-CW305
