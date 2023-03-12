@@ -82,3 +82,6 @@ def pulpino_ext_write(word):
 
 - [ ] Rename registers in `cw305_defines.v`
 - [ ] Remove many of the unused parts in `cw305_*.v` files
+- [ ] Create Python files
+- [ ] Create C files
+- [ ] Create Rust files
