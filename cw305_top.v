@@ -302,46 +302,6 @@ module cw305_top #(
 		  .tdo_o()
 	);
 
-  // START CRYPTO MODULE CONNECTIONS
-  // The following can have your crypto module inserted.
-  // This is an example of the Google Vault AES module.
-  // You can use the ILA to view waveforms if needed, which
-  // requires an external USB-JTAG adapter (such as Xilinx Platform
-  // Cable USB).
-
-
-`ifdef GOOGLE_VAULT_AES
-   wire aes_clk;
-   wire [127:0] aes_key;
-   wire [127:0] aes_pt;
-   wire [127:0] aes_ct;
-   wire aes_load;
-   wire aes_busy;
-
-   assign aes_clk = crypt_clk;
-   assign aes_key = crypt_key;
-   assign aes_pt = crypt_textout;
-   assign crypt_cipherin = aes_ct;
-   assign aes_load = crypt_start;
-   assign crypt_ready = 1'b1;
-   assign crypt_done = ~aes_busy;
-   assign crypt_busy = aes_busy;
-
-   // Example AES Core
-   aes_core aes_core (
-       .clk             (aes_clk),
-       .load_i          (aes_load),
-       .key_i           ({aes_key, 128'h0}),
-       .data_i          (aes_pt),
-       .size_i          (2'd0), //AES128
-       .dec_i           (1'b0),//enc mode
-       .data_o          (aes_ct),
-       .busy_o          (aes_busy)
-   );
-   assign tio_trigger = aes_busy;
-`endif
-
-
 endmodule
 
 `default_nettype wire
