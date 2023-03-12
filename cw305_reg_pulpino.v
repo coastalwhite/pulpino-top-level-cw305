@@ -72,7 +72,6 @@ module cw305_reg_pulpino #(
    output reg  [31:0]                  			O_usb_to_pulpino,
    output reg  [31:0]                  			O_ext_to_pulpino_flags,
 
-   output reg  [4:0]                            O_clksettings,
    output reg                                   O_user_led,
    output wire [pKEY_WIDTH-1:0]                 O_key,
    output wire [pPT_WIDTH-1:0]                  O_textin,
@@ -168,7 +167,8 @@ module cw305_reg_pulpino #(
    //////////////////////////////////
    always @(posedge usb_clk) begin
       if (reset_i) begin
-         O_clksettings <= 0;
+		 O_usb_to_pulpino <= 32'b0;
+		 O_ext_to_pulpino_flags <= 32'b0;
          O_user_led <= 0;
          reg_crypt_go_pulse <= 1'b0;
       end
