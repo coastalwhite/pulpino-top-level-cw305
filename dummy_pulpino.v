@@ -43,7 +43,7 @@ module dummy_pulpino(
   // GPIO PORT
   input wire [31:0]  gpio_dir,
   input wire [31:0]  gpio_in,
-  output reg [31:0]  gpio_out,
+  output wire [31:0] gpio_out,
 
   // Debug PORT
   input wire   tck_i,
@@ -75,93 +75,126 @@ module dummy_pulpino(
   assign sda_o     = 1'b0;
   assign sda_oen_o = 1'b0;
 
-  assign tdo_o <= 0'b1;
+  assign tdo_o 	   = 1'b1;
 
-  reg [63:0] internal_memory;
+  wire [7:0] usb_to_pulpino_data;
+  wire		 ext_write_flicker;
+  wire 		 ext_read_flicker;
+  wire		 usb_pulpino_write_flicker;
+  wire 		 usb_pulpino_read_flicker;
 
-  reg [2:0] read_counter;
-  reg       read_known_io_turn;
-  wire      read_io_turn;
-  assign    read_io_turn = gpio_in[8];
+  wire [7:0]  pulpino_to_usb_data;
+  wire		  pulpino_ext_write_flicker;
+  wire 		  pulpino_ext_read_flicker;
+  wire		  pulpino_usb_write_flicker;
+  wire 		  pulpino_usb_read_flicker;
 
-  wire      do_read;
-  assign    do_read      = gpio_in[9];
+  assign ext_write_flicker   = gpio_in[11];
+  assign ext_read_flicker    = gpio_in[10];
+  assign usb_pulpino_write_flicker   = gpio_in[9];
+  assign usb_pulpino_read_flicker    = gpio_in[8];
+  assign usb_to_pulpino_data = gpio_in[7:0];
 
-  reg [2:0] write_counter;
-  reg       write_known_io_turn;
-  wire      write_io_turn;
-  assign    write_io_turn = gpio_in[10];
+  assign gpio_out[31:12] = 20'b0;
+  assign gpio_out[11]  = pulpino_ext_write_flicker;
+  assign gpio_out[10]  = pulpino_ext_read_flicker;
+  assign gpio_out[9]   = pulpino_usb_write_flicker;
+  assign gpio_out[8]   = pulpino_usb_read_flicker;
+  assign gpio_out[7:0] = pulpino_to_usb_data;
 
-  wire      write_pc_turn;
-  assign    write_pc_turn = gpio_in[13];
-  reg       write_known_pc_turn;
+  reg [2:0] state, next_state;
 
-  initial begin
-      gpio_out            <= 32'b0;
-      internal_memory     <= 64'h1234_abcd_1337_4242;
-      read_counter        <= 3'b0;
-      read_known_io_turn  <= 1'b0;
-      write_counter       <= 3'b0;
-      write_known_io_turn <= 1'b0;
-      write_known_pc_turn <= 1'b0;
-  end
+  localparam
+  	  StartState      = 3'b000,
+	  Read            = 3'b001,
+	  Write  		  = 3'b010,
+  	  WriteWaitFinish = 3'b011,
+  	  WriteCheckEnd   = 3'b100,
+  	  Done			  = 3'b101;
 
   always @ (posedge clk) begin
-      if (!rst_n) begin
-          gpio_out            <= 32'b0;
-          internal_memory     <= 64'h1234_abcd_1337_4242;
-          read_counter        <= 3'b0;
-          read_known_io_turn  <= 1'b0;
-          write_counter       <= 3'b0;
-          write_known_io_turn <= 1'b0;
-          write_known_pc_turn <= 1'b0;
-      end 
-      else if (do_read || read_counter[2] == 1'b1) begin
-              if (do_read) gpio_out[9] <= 1'b0;
+	  if (!rst_n) begin
+		  state <= StartState;
+	  end
+	  else begin
+		  state <= next_state;
+	  end
+  end 
 
-              read_counter[2] <= 1'b1;
+  reg [15:0] range_start;
+  reg [15:0] range_end;
 
-              if (read_io_turn != read_known_io_turn) begin
-                  gpio_out[7:0] <= internal_memory[7:0];
-                  internal_memory <= internal_memory >> 8;
-                  gpio_out[8] <= !gpio_out[8];
+  wire [31:0] out_word;
 
-                  if ( read_counter[1:0] == 2'b11 ) begin
-                      read_counter <= 3'b000;
-                      gpio_out[9] <= 1'b1;
-                  end
-                  else begin
-                      read_counter <= read_counter + 1;
-                  end
-              end
+  reg write_enable;
+  reg [31:0] in_word;
 
-              read_known_io_turn <= read_io_turn;
-          end
-      else if (write_counter[2] == 1'b1) begin
-          if (write_counter[1:0] == 2'b00) gpio_out[11] <= 1'b0;
+  dummy_pulpino_read U_read (
+      .clk                           (clk),
+      .rst_n                         (rst_n),
 
-          if (write_io_turn != write_known_io_turn) begin
-              internal_memory <= { gpio_in[7:0], internal_memory[63:8] };
-              gpio_out[10] <= !gpio_out[10];
+      .in_data                       (usb_to_pulpino_data),
+      .did_word_write_flicker        (ext_write_flicker),
+      .did_byte_write_flicker        (usb_pulpino_write_flicker),
 
-              if ( write_counter[1:0] == 2'b11 ) begin
-                  write_counter <= 3'b000;
-                  gpio_out[11] <= 1'b1;
-              end
-              else begin
-                  write_counter <= write_counter + 1;
-              end
-          end
+      .out_word                      (out_word),
+      .did_word_read_flicker         (pulpino_ext_read_flicker),
+      .did_byte_read_flicker         (pulpino_usb_read_flicker)
+  );
 
-          read_known_io_turn <= read_io_turn;
-      end
-      else begin
-          if ( write_known_pc_turn != write_pc_turn ) begin
-              write_counter <= 3'b100;
-          end
+  dummy_pulpino_write U_write (
+        .clk                           (clk),
+        .rst_n                         (rst_n),
 
-          write_known_pc_turn <= write_pc_turn;
-      end
+        .enable                        (write_enable),
+
+        .out_data                      (pulpino_to_usb_data),
+	    .did_word_write_flicker        (pulpino_ext_write_flicker),
+	    .did_byte_write_flicker        (pulpino_usb_write_flicker),
+
+	    .in_word                       (in_word),
+	    .did_word_read_flicker         (ext_read_flicker),
+	    .did_byte_read_flicker         (usb_pulpino_read_flicker)
+    );
+
+  always @ (state, pulpino_ext_read_flicker, pulpino_ext_write_flicker) begin
+      next_state <= state;
+
+	  case (state)
+		  StartState: begin
+			  write_enable <= 1'b0;
+			  next_state <= Read;
+		  end
+		  Read: begin 
+              if (pulpino_ext_read_flicker == 1'b1) begin
+                  range_start <= out_word[31:16];
+                  range_end <= out_word[15:0];
+                  next_state <= WriteCheckEnd;
+              end 
+		 end
+		 Write: begin
+             write_enable <= 1'b1;
+             in_word <= { 16'b0, range_start };
+             next_state <= WriteWaitFinish;
+	     end
+         WriteWaitFinish: begin
+             if (pulpino_ext_write_flicker == 1'b1) begin
+                 write_enable <= 1'b0;
+                 in_word <= 32'b0;
+                 next_state <= WriteCheckEnd;
+                 range_start <= range_start + 1;
+             end
+         end
+         WriteCheckEnd: begin
+             if (pulpino_ext_write_flicker == 1'b0) begin
+                 if (range_start != range_end)
+                     next_state <= Write;
+                 else
+                     next_state <= Done;
+             end
+         end
+		 Done: next_state <= Done;
+	 endcase
   end
 endmodule
 
