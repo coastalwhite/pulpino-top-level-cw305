@@ -3,73 +3,64 @@
 module dummy_pulpino_tb();
     reg reset_i;
 
-    reg [31:0] read_data;
-    wire [7:0] gpio_data_in;
-    wire [1:0] data_in_io_turn;
-    reg [1:0] data_in_pulpino_turn;
-    
-    wire data_in_done;
-    
-    reg do_read;
-    
-    wire [31:0] write_data;
-    reg [7:0] gpio_data_out;
-    wire data_out_io_turn;
-    reg [1:0] data_out_pulpino_turn;
-    
-    wire data_out_done;
+	reg [31:0] usb_to_pulpino_reg;
+	reg ext_write_flicker;
+	reg ext_read_flicker;
+	reg usb_to_pulpino_read_reg;
+
+	wire [7:0] usb_to_pulpino_data;
+	wire		 usb_pulpino_write_flicker;
+	wire 		 usb_pulpino_read_flicker;
+
+	wire [31:0] pulpino_to_usb_reg;
+	wire [7:0] pulpino_to_usb_data;
+	wire		 pulpino_ext_write_flicker;
+	wire 		 pulpino_ext_read_flicker;
+	wire		 pulpino_usb_write_flicker;
+	wire 		 pulpino_usb_read_flicker;
     
     reg clk;
-    reg write_turn;
 
     wire [31:0] gpio_dir;
     wire [31:0] gpio_in;
+    wire [31:0] gpio_out;
 
-    m_gpio_in_output m_gpio_in (
-        .gpio_in          (gpio_in),
-        .data             (gpio_data_in),
-        .read_io_turn     (data_in_io_turn),
-        .read_io_finish   (data_in_done),
-        .write_io_turn  (,
-        data_out_io_turn,
-        write_turn,
-
-    );
-    assign gpio_in[7:0] = gpio_data_in;
-    assign gpio_in[9:8] = data_in_io_turn;
-    assign gpio_in[10] = data_out_io_turn;
-    assign gpio_in[13] = write_turn;
-    assign gpio_in[31:14] = 17'b0;
-
-    assign gpio_out[7:0] = gpio_data_out;
-    assign gpio_out[9:8] = data_in_pulpino_turn;
-    assign gpio_out[11:10] = data_out_pulpino_turn;
-    assign gpio_in[31:12] = 19'b0;
+    assign gpio_in       = {
+        20'b0,
+		ext_write_flicker,
+		ext_read_flicker,
+		usb_pulpino_write_flicker,
+		usb_pulpino_read_flicker,
+        usb_to_pulpino_data
+    };
 
     assign gpio_dir = 32'b0;
 
-   gpio_pulpino_comm inst (
+	assign pulpino_ext_write_flicker = gpio_out[11];
+	assign pulpino_ext_write_flicker = gpio_out[10];
+	assign pulpino_usb_write_flicker = gpio_out[9];
+	assign pulpino_usb_read_flicker = gpio_out[8];
+    assign pulpino_to_usb_data = gpio_out[7:0];
+
+    usb_pulpino_channel inst (
         .reset_i                       (reset_i),
 
         // USB -> Pulpino
-        .read_data                     (read_data),
-        .gpio_data_in                  (gpio_data_in),
-        .data_in_io_turn               (data_in_io_turn),
-        .data_in_pulpino_turn          (data_in_pulpino_turn),
-
-        .data_in_done                  (data_in_done),
-
-        .do_read                       (do_read),
+        .usb_to_pulpino_reg            (usb_to_pulpino_reg),
+        .usb_to_pulpino_data           (usb_to_pulpino_data),
+        .usb_to_pulpino_read_reg       (usb_to_pulpino_read_reg),
 
         // Pulpino -> USB
-        .write_data                    (write_data),
-        .gpio_data_out                 (gpio_data_out),
-        .data_out_io_turn              (data_out_io_turn),
-        .data_out_pulpino_turn         (data_out_pulpino_turn),
+        .pulpino_to_usb_reg            (pulpino_to_usb_reg),
+        .pulpino_to_usb_data           (usb_to_pulpino_data),
+
+		.usb_read_flicker			   (usb_pulpino_read_flicker),
+		.usb_write_flicker             (usb_pulpino_write_flicker),
+
+		.pulpino_read_flicker          (pulpino_usb_read_flicker),
+		.pulpino_write_flicker         (pulpino_usb_write_flicker),
     
-        .data_out_done                 (data_out_done),
-    
-        .clk                           (clk)
+        .clk                           (pulpino_clk)
     );
 
     dummy_pulpino pulp (
@@ -130,14 +121,13 @@ module dummy_pulpino_tb();
         #0
         clk        <= 1'b0;
         reset_i    <= 1'b1;
-        data_in_pulpino_turn <= 2'b00;
-        data_out_pulpino_turn <= 2'b00;
-        write_turn <= 1'b0;
+		usb_to_pulpino_reg <= 32'b0;
 
         #10
         reset_i   <= 1'b0;
+		usb_to_pulpino_read_reg <= 1'b1;
         
-        // READ
-        write_turn <= 1'b0;
+		#50
+		usb_to_pulpino_read_reg <= 1'b1;
     end
 endmodule
