@@ -201,6 +201,13 @@ module cw305_top #(
     assign pulpino_usb_write_flicker = gpio_out[9];
     assign pulpino_usb_read_flicker = gpio_out[8];
     assign pulpino_to_usb_data = gpio_out[7:0];
+    
+    assign led3 = (
+        ( k15_sel &  l14_sel & pulpino_ext_read_flicker)  |
+        ( k15_sel & ~l14_sel & pulpino_ext_write_flicker) |
+        (~k15_sel &  l14_sel & ext_read_flicker)          |
+        (~k15_sel & ~l14_sel & ext_write_flicker)
+    );
 
     usb_pulpino_channel inst (
         .reset_i                       (reset),
