@@ -31,14 +31,12 @@ def pulpino_usb_read():
     word = 0
 
     for i in range(4):
-        await usb_write_flicker != known_usb_write_flicker
-
-        known_usb_write_flicker = !known_usb_write_flicker
+        await usb_write_flicker != (i & 1)
 
         word <<= 8
         word |= data
 
-        pulpino_usb_read_flicker = !pulpino_usb_read_flicker
+        pulpino_usb_read_flicker = !(i & 1)
     
     return word
 ```
@@ -49,10 +47,9 @@ def pulpino_usb_write(word):
         data = word & 0xFF
         word >>= 8
 
-        pulpino_usb_write_flicker = !pulpino_usb_write_flicker
+        pulpino_usb_write_flicker = !(i & 1)
 
-        await usb_read_flicker != known_usb_read_flicker
-        known_usb_read_flicker = !known_usb_read_flicker
+        await usb_read_flicker != (i & 1)
 
     data = 0x00;
 ```
@@ -61,12 +58,13 @@ def pulpino_usb_write(word):
 
 ```python
 def pulpino_ext_read():
-    await ext_write_flicker != known_ext_write_flicker
-    known_ext_write_flicker = !known_ext_write_flicker
+    await ext_write_flicker != 1
 
     word = pulpino_usb_read()
 
-    pulpino_ext_read_flicker = !pulpino_ext_read_flicker
+    pulpino_ext_read_flicker = 1
+    await ext_write_flicker != 0
+    pulpino_ext_read_flicker = 0
 
     return word
 ```
@@ -75,8 +73,7 @@ def pulpino_ext_read():
 def pulpino_ext_write(word):
     pulpino_usb_write(word)
 
-    pulpino_ext_write_flicker = !pulpino_ext_write_flicker
-
-    await ext_read_flicker != known_ext_read_flicker
-    known_ext_read_flicker = !known_ext_read_flicker
+    pulpino_ext_write_flicker = 1
+    await ext_read_flicker != 1
+    pulpino_ext_write_flicker = 0
 ```
