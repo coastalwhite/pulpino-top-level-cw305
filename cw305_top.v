@@ -91,12 +91,12 @@ module cw305_top #(
     wire resetn = pushbutton;
     wire reset = !resetn;
 
-	wire [31:0] write_data;
-	wire [31:0] read_data;
-	wire [31:0] data_ctrl;
-	wire [31:0] data_status;
+	wire [31:0] pulpino_to_usb_reg;
+	wire [31:0] usb_to_pulpino_reg;
+    wire        usb_to_pulpino_read_reg;
 
-    wire        do_read;
+	wire [31:0] pulpino_to_ext_flags;
+	wire [31:0] ext_to_pulpino_flags;
 
     // USB CLK Heartbeat
     reg [24:0] usb_timer_heartbeat;
@@ -141,7 +141,7 @@ module cw305_top #(
        .pKEY_WIDTH              (pKEY_WIDTH)
     ) U_reg_pulpino (
        .reset_i                 (reset),
-       .crypto_clk              (crypt_clk),
+       .crypto_clk              (pulpino_clk),
        .usb_clk                 (usb_clk_buf), 
        .reg_address             (reg_address[pADDR_WIDTH-pBYTECNT_SIZE-1:0]), 
        .reg_bytecnt             (reg_bytecnt), 
@@ -153,22 +153,26 @@ module cw305_top #(
 
        .exttrigger_in           (usb_trigger),
 
-	   .I_write_data			(write_data),
-	   .I_data_ctrl				(write_ctrl),
+	   .I_pulpino_to_usb		(pulpino_to_usb_reg),
+	   .I_pulpino_to_ext_flags	(pulpino_to_ext_flags),
+
        .I_textout               (128'b0),               // unused
        .I_cipherout             (crypt_cipherin),
        .I_ready                 (crypt_ready),
        .I_done                  (crypt_done),
        .I_busy                  (crypt_busy),
 
-	   .O_read_data				(read_data),
+	   .O_usb_to_pulpino		(usb_to_pulpino_reg),
+	   .O_ext_to_pulpino_flags	(ext_to_pulpino_flags),
+
        .O_clksettings           (clk_settings),
        .O_user_led              (led3),
        .O_key                   (crypt_key),
        .O_textin                (crypt_textout),
        .O_cipherin              (),                     // unused
        .O_start                 (crypt_start),
-       .O_do_read               (do_read)
+
+       .O_usb_to_pulpino_read   (usb_to_pulpino_read_reg)
     );
 
     assign usb_data = isout? usb_dout : 8'bZ;
@@ -189,62 +193,114 @@ module cw305_top #(
     wire [31:0] gpio_in;
     wire [31:0] gpio_out;
 
-    reg  [7:0]  gpio_data_in;
-    wire [1:0]  data_in_pulpino_turn;
-    wire [1:0]  data_in_io_turn;
-    wire        data_in_done;
+    wire [7:0]  usb_to_pulpino_data;
+    wire [7:0]  pulpino_to_usb_data;
 
-    wire [7:0]  gpio_data_out;
-    wire [1:0]  data_out_pulpino_turn;
-    wire        data_out_io_turn;
-    wire        data_out_done;
+	wire ext_read_flicker;
+	wire ext_write_flicker;
 
-    wire        write_turn;
-    wire        read_turn;
+	wire usb_read_flicker;
+	wire usb_write_flicker;
 
-    assign data_in_done     = data_ctrl[0];
-    assign data_out_done    = data_ctrl[1];
-    assign read_turn        = data_ctrl[2];
+	wire pulpino_ext_read_flicker;
+	wire pulpino_ext_write_flicker;
+	wire pulpino_usb_read_flicker;
+	wire pulpino_usb_write_flicker;
 
-    assign write_turn       = data_status[0];
+    assign ext_read_flicker     = ext_to_pulpino_flags[0];
+    assign ext_write_flicker    = ext_to_pulpino_flags[1];
+
+    assign pulpino_to_ext_flags[0] = pulpino_ext_read_flicker;
+    assign pulpino_to_ext_flags[1] = pulpino_ext_write_flicker;
 
     assign gpio_dir      = 32'h0000_0000;
     assign gpio_in       = {
         20'b0,
-        write_turn,
-        data_out_io_turn,
-        data_in_io_turn,
-        gpio_data_in
+		ext_write_flicker,
+		ext_read_flicker,
+		usb_write_flicker,
+		usb_read_flicker,
+        usb_to_pulpino_reg
     };
 
-    assign read_turn = gpio_out[12];
-    assign data_out_pulpino_turn = gpio_out[11:10];
-    assign data_in_pulpino_turn = gpio_out[9:8];
-    assign gpio_data_out = gpio_out[7:0];
+    assign pulpino_ext_write_flicker = gpio_out[11];
+    assign pulpino_ext_read_flicker = gpio_out[10];
+    assign pulpino_usb_write_flicker = gpio_out[9];
+    assign pulpino_usb_read_flicker = gpio_out[8];
+    assign pulpino_to_usb_data = gpio_out[7:0];
 
     usb_pulpino_channel inst (
         .reset_i                       (reset),
 
         // USB -> Pulpino
-        .read_data                     (read_data),
-        .gpio_data_in                  (gpio_data_in),
-        .data_in_io_turn               (data_in_io_turn),
-        .data_in_pulpino_turn          (data_in_pulpino_turn),
-
-        .data_in_done                  (data_in_done),
-
-        .do_read                       (do_read),
+        .usb_to_pulpino_reg            (usb_to_pulpino_reg),
+        .usb_to_pulpino_data           (usb_to_pulpino_data),
+        .usb_to_pulpino_read_reg       (usb_to_pulpino_read_reg),
 
         // Pulpino -> USB
-        .write_data                    (write_data),
-        .gpio_data_out                 (gpio_data_out),
-        .data_out_io_turn              (data_out_io_turn),
-        .data_out_pulpino_turn         (data_out_pulpino_turn),
-    
-        .data_out_done                 (data_out_done),
+        .pulpino_to_usb_reg            (pulpino_to_usb_reg),
+        .pulpino_to_usb_data           (usb_to_pulpino_data),
+
+		.usb_read_flicker			   (usb_read_flicker),
+		.usb_write_flicker             (usb_write_flicker),
+
+		.pulpino_read_flicker          (pulpino_usb_read_flicker),
+		.pulpino_write_flicker         (pulpino_usb_write_flicker),
     
         .clk                           (pulpino_clk)
     );
+
+	dummy_pulpino pulpino (
+  		.clk  (pulpino_clk),
+  		.rst_n(resetn),
+
+		 //.fetch_enable_i(fetch_enable_i),
+
+		  .spi_clk_i(1'b0),
+		  .spi_cs_i(1'b0),
+		  .spi_mode_o(),
+		  .spi_sdo0_o(),
+		  .spi_sdo1_o(),
+		  .spi_sdo2_o(),
+		  .spi_sdo3_o(),
+		  .spi_sdi0_i(1'b0),
+		  .spi_sdi1_i(1'b0),
+		  .spi_sdi2_i(1'b0),
+		  .spi_sdi3_i(1'b0),
+
+		  .spi_master_clk_o(),
+		  .spi_master_csn0_o(),
+		  .spi_master_csn1_o(),
+		  .spi_master_sdo0_o(),
+		  .spi_master_sdi0_i(1'b0),
+
+		  // Interface UART
+		  .uart_tx(),
+		  .uart_rx(1'b0),
+		  .uart_rts(),
+		  .uart_dtr(),
+		  .uart_cts(1'b0),
+		  .uart_dsr(1'b0),
+
+		  .scl_i(1'b0),
+		  .scl_o(),
+		  .scl_oen_o(),
+		  .sda_i(1'b0),
+		  .sda_o(),
+		  .sda_oen_o(),
+
+		  // GPIO PORT
+		  .gpio_dir(gpio_dir),
+		  .gpio_in(gpio_in),
+		  .gpio_out(gpio_out),
+
+		  // Debug PORT
+		  .tck_i(1'b0),
+		  .trstn_i(1'b0),
+		  .tms_i(1'b0),
+		  .tdi_i(1'b0),
+		  .tdo_o()
+	);
 
   // START CRYPTO MODULE CONNECTIONS
   // The following can have your crypto module inserted.

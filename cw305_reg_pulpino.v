@@ -56,21 +56,22 @@ module cw305_reg_pulpino #(
                                                                  // present on write_data
    input  wire                                  reg_addrvalid,   // Address valid flag
 
-// from top:
+   // from top:
    input  wire                                  exttrigger_in,
 
-// register inputs:
-   input  wire [31:0]                  			I_write_data,
-   input  wire [31:0]                  			I_data_ctrl,
+   // register inputs:
+   input  wire [31:0]                  			I_pulpino_to_usb,
+   input  wire [31:0]                  			I_pulpino_to_ext_flags,
    input  wire [pPT_WIDTH-1:0]                  I_textout,
    input  wire [pCT_WIDTH-1:0]                  I_cipherout,
    input  wire                                  I_ready,  /* Crypto core ready. Tie to '1' if not used. */
    input  wire                                  I_done,   /* Crypto done. Can be high for one crypto_clk cycle or longer. */
    input  wire                                  I_busy,   /* Crypto busy. */
 
-// register outputs:
-   output reg  [31:0]                  			O_read_data,
-   output reg  [31:0]                  			O_data_status,
+   // register outputs:
+   output reg  [31:0]                  			O_usb_to_pulpino,
+   output reg  [31:0]                  			O_ext_to_pulpino_flags,
+
    output reg  [4:0]                            O_clksettings,
    output reg                                   O_user_led,
    output wire [pKEY_WIDTH-1:0]                 O_key,
@@ -78,7 +79,7 @@ module cw305_reg_pulpino #(
    output wire [pCT_WIDTH-1:0]                  O_cipherin,
    output wire                                  O_start,   /* High for one crypto_clk cycle, indicates text ready. */
 
-   output wire                                  O_do_read
+   output reg                                   O_usb_to_pulpino_read
 
 );
 
@@ -106,15 +107,14 @@ module cw305_reg_pulpino #(
    (* ASYNC_REG = "TRUE" *) reg  [1:0] go_pipe;
    (* ASYNC_REG = "TRUE" *) reg  [1:0] busy_pipe;
 
-   reg                          do_read;
    reg [1:0]                    do_read_counter;
 
-   initial do_read <= 1'b0;
+   initial O_usb_to_pulpino_read <= 1'b0;
    always @ (posedge crypto_clk) begin
        if ( do_read_counter == 2'b00 )
-           do_read <= 1'b0;
+           O_usb_to_pulpino_read <= 1'b0;
        else
-           do_read <= 1'b1;
+           O_usb_to_pulpino_read <= 1'b1;
    end
 
    always @(posedge crypto_clk) begin
@@ -159,10 +159,10 @@ module cw305_reg_pulpino #(
             `REG_CRYPT_TEXTOUT:         reg_read_data = reg_crypt_textout_usb[reg_bytecnt*8 +: 8];
             `REG_CRYPT_CIPHEROUT:       reg_read_data = reg_crypt_cipherout_usb[reg_bytecnt*8 +: 8];
             `REG_BUILDTIME:             reg_read_data = buildtime[reg_bytecnt*8 +: 8];
-            `REG_READ_DATA:             reg_read_data = O_read_data;
-            `REG_WRITE_DATA:            reg_read_data = I_write_data;
-            `REG_DATA_CTRL:             reg_read_data = I_data_ctrl;
-            `REG_DATA_STATUS:           reg_read_data = O_data_status;
+            `REG_READ_DATA:             reg_read_data = O_usb_to_pulpino;
+            `REG_WRITE_DATA:            reg_read_data = I_pulpino_to_usb;
+            `REG_DATA_CTRL:             reg_read_data = I_pulpino_to_ext_flags;
+            `REG_DATA_STATUS:           reg_read_data = O_ext_to_pulpino_flags;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -193,8 +193,8 @@ module cw305_reg_pulpino #(
                `REG_CRYPT_TEXTIN:       reg_crypt_textin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_CIPHERIN:     reg_crypt_cipherin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_KEY:          reg_crypt_key[reg_bytecnt*8 +: 8] <= write_data;
-			   `REG_READ_DATA:          O_read_data <= write_data;
-			   `REG_DATA_STATUS:        O_data_status <= write_data;
+			   `REG_READ_DATA:          O_usb_to_pulpino <= write_data;
+			   `REG_DATA_STATUS:        O_ext_to_pulpino_flags <= write_data;
             endcase
          end
          // REG_CRYPT_GO register is special: writing it creates a pulse. Reading it gives you the "busy" status.
