@@ -159,10 +159,10 @@ module cw305_reg_pulpino #(
             `REG_CRYPT_TEXTOUT:         reg_read_data = reg_crypt_textout_usb[reg_bytecnt*8 +: 8];
             `REG_CRYPT_CIPHEROUT:       reg_read_data = reg_crypt_cipherout_usb[reg_bytecnt*8 +: 8];
             `REG_BUILDTIME:             reg_read_data = buildtime[reg_bytecnt*8 +: 8];
-            `REG_READ_DATA:             reg_read_data = O_usb_to_pulpino;
-            `REG_WRITE_DATA:            reg_read_data = I_pulpino_to_usb;
-            `REG_DATA_CTRL:             reg_read_data = I_pulpino_to_ext_flags;
-            `REG_DATA_STATUS:           reg_read_data = O_ext_to_pulpino_flags;
+            `REG_EXT_PULPINO_DATA:      reg_read_data = O_usb_to_pulpino;
+            `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_to_usb;
+            `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_to_ext_flags;
+            `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_to_pulpino_flags;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -193,8 +193,8 @@ module cw305_reg_pulpino #(
                `REG_CRYPT_TEXTIN:       reg_crypt_textin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_CIPHERIN:     reg_crypt_cipherin[reg_bytecnt*8 +: 8] <= write_data;
                `REG_CRYPT_KEY:          reg_crypt_key[reg_bytecnt*8 +: 8] <= write_data;
-			   `REG_READ_DATA:          O_usb_to_pulpino <= write_data;
-			   `REG_DATA_STATUS:        O_ext_to_pulpino_flags <= write_data;
+			   `REG_EXT_PULPINO_DATA:   O_usb_to_pulpino <= write_data;
+			   `REG_EXT_PULPINO_FLAGS:  O_ext_to_pulpino_flags <= write_data;
             endcase
          end
          // REG_CRYPT_GO register is special: writing it creates a pulse. Reading it gives you the "busy" status.
