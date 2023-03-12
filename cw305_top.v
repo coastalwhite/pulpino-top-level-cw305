@@ -33,8 +33,7 @@ module cw305_top #(
     parameter pBYTECNT_SIZE = 7,
     parameter pADDR_WIDTH = 21,
     parameter pPT_WIDTH = 128,
-    parameter pCT_WIDTH = 128,
-    parameter pKEY_WIDTH = 128
+    parameter pCT_WIDTH = 128
 )(
     // USB Interface
     input wire                          usb_clk,        // Clock
@@ -126,8 +125,7 @@ module cw305_top #(
        .pBYTECNT_SIZE           (pBYTECNT_SIZE),
        .pADDR_WIDTH             (pADDR_WIDTH),
        .pPT_WIDTH               (pPT_WIDTH),
-       .pCT_WIDTH               (pCT_WIDTH),
-       .pKEY_WIDTH              (pKEY_WIDTH)
+       .pCT_WIDTH               (pCT_WIDTH)
     ) U_reg_pulpino (
        .reset_i                 (reset),
        .crypto_clk              (pulpino_clk),
