@@ -67,7 +67,7 @@ module dummy_pulpino_tb();
         .clk                           (clk),
         .rst_n                         (!reset_i),
 
-        //input wire fetch_enable_i,
+        .fetch_enable_i                (1'b1),
 
         .spi_clk_i                     (1'b0),
         .spi_cs_i                      (1'b0),

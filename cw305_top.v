@@ -223,56 +223,57 @@ module cw305_top #(
         .clk                           (pulpino_clk)
     );
 
-	dummy_pulpino pulpino (
-  		.clk  (pulpino_clk),
-  		.rst_n(resetn),
+	// dummy_pulpino U_proc (
+	pulpino U_proc (
+  		.clk                           (pulpino_clk),
+  		.rst_n                         (resetn),
 
-		 //.fetch_enable_i(fetch_enable_i),
+		 .fetch_enable_i               (1'b1),
 
-		  .spi_clk_i(1'b0),
-		  .spi_cs_i(1'b0),
-		  .spi_mode_o(),
-		  .spi_sdo0_o(),
-		  .spi_sdo1_o(),
-		  .spi_sdo2_o(),
-		  .spi_sdo3_o(),
-		  .spi_sdi0_i(1'b0),
-		  .spi_sdi1_i(1'b0),
-		  .spi_sdi2_i(1'b0),
-		  .spi_sdi3_i(1'b0),
+		 .spi_clk_i                    (1'b0),
+		 .spi_cs_i                     (1'b0),
+		 .spi_mode_o                   (),
+		 .spi_sdo0_o                   (),
+		 .spi_sdo1_o                   (),
+		 .spi_sdo2_o                   (),
+		 .spi_sdo3_o                   (),
+		 .spi_sdi0_i                   (1'b0),
+		 .spi_sdi1_i                   (1'b0),
+		 .spi_sdi2_i                   (1'b0),
+		 .spi_sdi3_i                   (1'b0),
 
-		  .spi_master_clk_o(),
-		  .spi_master_csn0_o(),
-		  .spi_master_csn1_o(),
-		  .spi_master_sdo0_o(),
-		  .spi_master_sdi0_i(1'b0),
+		 .spi_master_clk_o             (),
+		 .spi_master_csn0_o            (),
+		 .spi_master_csn1_o            (),
+		 .spi_master_sdo0_o            (),
+		 .spi_master_sdi0_i            (1'b0),
 
-		  // Interface UART
-		  .uart_tx(),
-		  .uart_rx(1'b0),
-		  .uart_rts(),
-		  .uart_dtr(),
-		  .uart_cts(1'b0),
-		  .uart_dsr(1'b0),
+		 // Interface UART
+		 .uart_tx                      (),
+		 .uart_rx                      (1'b0),
+		 .uart_rts                     (),
+		 .uart_dtr                     (),
+		 .uart_cts                     (1'b0),
+		 .uart_dsr                     (1'b0),
 
-		  .scl_i(1'b0),
-		  .scl_o(),
-		  .scl_oen_o(),
-		  .sda_i(1'b0),
-		  .sda_o(),
-		  .sda_oen_o(),
+		 .scl_i                        (1'b0),
+		 .scl_o                        (),
+		 .scl_oen_o                    (),
+		 .sda_i                        (1'b0),
+		 .sda_o                        (),
+		 .sda_oen_o                    (),
 
-		  // GPIO PORT
-		  .gpio_dir(gpio_dir),
-		  .gpio_in(gpio_in),
-		  .gpio_out(gpio_out),
+		 // GPIO PORT
+		 .gpio_dir                     (gpio_dir),
+		 .gpio_in                      (gpio_in),
+		 .gpio_out                     (gpio_out),
 
-		  // Debug PORT
-		  .tck_i(1'b0),
-		  .trstn_i(1'b0),
-		  .tms_i(1'b0),
-		  .tdi_i(1'b0),
-		  .tdo_o()
+		 // Debug PORT
+		 .tck_i                        (1'b0),
+		 .trstn_i                      (1'b0),
+		 .tms_i                        (1'b0),
+		 .tdi_i                        (1'b0),
+		 .tdo_o                        ()
 	);
 
 endmodule

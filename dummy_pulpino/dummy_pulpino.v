@@ -5,7 +5,7 @@ module dummy_pulpino(
   input wire clk,
   input wire rst_n,
 
-  //input wire fetch_enable_i,
+  input wire fetch_enable_i,
 
   input wire         spi_clk_i,
   input  wire        spi_cs_i,
