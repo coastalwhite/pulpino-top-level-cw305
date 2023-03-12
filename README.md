@@ -74,14 +74,14 @@ def pulpino_ext_write(word):
     pulpino_usb_write(word)
 
     pulpino_ext_write_flicker = 1
-    await ext_read_flicker != 1
+    await ext_read_flicker != 0
     pulpino_ext_write_flicker = 0
 ```
 
 ## TODO
 
-- [ ] Rename registers in `cw305_defines.v`
-- [ ] Remove many of the unused parts in `cw305_*.v` files
+- [x] Rename registers in `cw305_defines.v`
+- [x] Remove many of the unused parts in `cw305_*.v` files
 - [ ] Create Python files
 - [ ] Create C files
 - [ ] Create Rust files
