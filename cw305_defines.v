@@ -34,21 +34,9 @@ either expressed or implied, of NewAE Technology Inc.
 // Since this is the only symlink candidate in this repo at this moment, it seems easier/less risky
 // to deal with having two files.
 
-`define REG_CLKSETTINGS                 'h00
-`define REG_USER_LED                    'h01
-`define REG_CRYPT_TYPE                  'h02
-`define REG_CRYPT_REV                   'h03
-`define REG_IDENTIFY                    'h04
-`define REG_CRYPT_GO                    'h05
-`define REG_CRYPT_TEXTIN                'h06
-`define REG_CRYPT_CIPHERIN              'h07
-`define REG_CRYPT_TEXTOUT               'h08
-`define REG_CRYPT_CIPHEROUT             'h09
-`define REG_CRYPT_KEY                   'h0a
-`define REG_BUILDTIME                   'h0b
-`define REG_EXT_PULPINO_DATA            'h0c
-`define REG_PULPINO_EXT_DATA            'h0d
-`define REG_EXT_PULPINO_FLAGS           'h0e
-`define REG_PULPINO_EXT_FLAGS           'h0f
+`define REG_EXT_PULPINO_DATA            'h00
+`define REG_PULPINO_EXT_DATA            'h01
+`define REG_EXT_PULPINO_FLAGS           'h02
+`define REG_PULPINO_EXT_FLAGS           'h03
 
 

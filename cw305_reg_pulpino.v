@@ -147,18 +147,6 @@ module cw305_reg_pulpino #(
    always @(*) begin
       if (reg_addrvalid && reg_read) begin
          case (reg_address)
-            `REG_CLKSETTINGS:           reg_read_data = O_clksettings;
-            `REG_USER_LED:              reg_read_data = O_user_led;
-            `REG_CRYPT_TYPE:            reg_read_data = pCRYPT_TYPE;
-            `REG_CRYPT_REV:             reg_read_data = pCRYPT_REV;
-            `REG_IDENTIFY:              reg_read_data = pIDENTIFY;
-            `REG_CRYPT_GO:              reg_read_data = busy_usb;
-            `REG_CRYPT_KEY:             reg_read_data = reg_crypt_key[reg_bytecnt*8 +: 8];
-            `REG_CRYPT_TEXTIN:          reg_read_data = reg_crypt_textin[reg_bytecnt*8 +: 8];
-            `REG_CRYPT_CIPHERIN:        reg_read_data = reg_crypt_cipherin[reg_bytecnt*8 +: 8];
-            `REG_CRYPT_TEXTOUT:         reg_read_data = reg_crypt_textout_usb[reg_bytecnt*8 +: 8];
-            `REG_CRYPT_CIPHEROUT:       reg_read_data = reg_crypt_cipherout_usb[reg_bytecnt*8 +: 8];
-            `REG_BUILDTIME:             reg_read_data = buildtime[reg_bytecnt*8 +: 8];
             `REG_EXT_PULPINO_DATA:      reg_read_data = O_usb_to_pulpino;
             `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_to_usb;
             `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_to_ext_flags;
@@ -188,11 +176,6 @@ module cw305_reg_pulpino #(
       else begin
          if (reg_addrvalid && reg_write) begin
             case (reg_address)
-               `REG_CLKSETTINGS:        O_clksettings <= write_data;
-               `REG_USER_LED:           O_user_led <= write_data;
-               `REG_CRYPT_TEXTIN:       reg_crypt_textin[reg_bytecnt*8 +: 8] <= write_data;
-               `REG_CRYPT_CIPHERIN:     reg_crypt_cipherin[reg_bytecnt*8 +: 8] <= write_data;
-               `REG_CRYPT_KEY:          reg_crypt_key[reg_bytecnt*8 +: 8] <= write_data;
 			   `REG_EXT_PULPINO_DATA:   O_usb_to_pulpino <= write_data;
 			   `REG_EXT_PULPINO_FLAGS:  O_ext_to_pulpino_flags <= write_data;
             endcase
