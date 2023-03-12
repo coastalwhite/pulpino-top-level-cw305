@@ -65,16 +65,6 @@ module cw305_top #(
     input  wire                         tio_clkin
     );
 
-
-    wire [pKEY_WIDTH-1:0] crypt_key;
-    wire [pPT_WIDTH-1:0] crypt_textout;
-    wire [pCT_WIDTH-1:0] crypt_cipherin;
-    wire crypt_init;
-    wire crypt_ready;
-    wire crypt_start;
-    wire crypt_done;
-    wire crypt_busy;
-
     wire usb_clk_buf;
     wire [7:0] usb_dout;
     wire isout;
@@ -85,7 +75,6 @@ module cw305_top #(
     wire [7:0] read_data;
     wire reg_read;
     wire reg_write;
-    wire [4:0] clk_settings;
     wire pulpino_clk;    
 
     wire resetn = pushbutton;
@@ -156,21 +145,8 @@ module cw305_top #(
 	   .I_pulpino_to_usb		(pulpino_to_usb_reg),
 	   .I_pulpino_to_ext_flags	(pulpino_to_ext_flags),
 
-       .I_textout               (128'b0),               // unused
-       .I_cipherout             (crypt_cipherin),
-       .I_ready                 (crypt_ready),
-       .I_done                  (crypt_done),
-       .I_busy                  (crypt_busy),
-
 	   .O_usb_to_pulpino		(usb_to_pulpino_reg),
 	   .O_ext_to_pulpino_flags	(ext_to_pulpino_flags),
-
-       .O_clksettings           (clk_settings),
-       .O_user_led              (led3),
-       .O_key                   (crypt_key),
-       .O_textin                (crypt_textout),
-       .O_cipherin              (),                     // unused
-       .O_start                 (crypt_start),
 
        .O_usb_to_pulpino_read   (usb_to_pulpino_read_reg)
     );

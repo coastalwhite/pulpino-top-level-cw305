@@ -33,10 +33,8 @@ either expressed or implied, of NewAE Technology Inc.
 module cw305_reg_pulpino #(
    parameter pADDR_WIDTH = 21,
    parameter pBYTECNT_SIZE = 7,
-   parameter pDONE_EDGE_SENSITIVE = 1,
    parameter pPT_WIDTH = 128,
    parameter pCT_WIDTH = 128,
-   parameter pKEY_WIDTH = 128,
    parameter pCRYPT_TYPE = 2,
    parameter pCRYPT_REV = 4,
    parameter pIDENTIFY = 8'h2e
@@ -62,49 +60,16 @@ module cw305_reg_pulpino #(
    // register inputs:
    input  wire [31:0]                  			I_pulpino_to_usb,
    input  wire [31:0]                  			I_pulpino_to_ext_flags,
-   input  wire [pPT_WIDTH-1:0]                  I_textout,
-   input  wire [pCT_WIDTH-1:0]                  I_cipherout,
-   input  wire                                  I_ready,  /* Crypto core ready. Tie to '1' if not used. */
-   input  wire                                  I_done,   /* Crypto done. Can be high for one crypto_clk cycle or longer. */
-   input  wire                                  I_busy,   /* Crypto busy. */
 
    // register outputs:
    output reg  [31:0]                  			O_usb_to_pulpino,
    output reg  [31:0]                  			O_ext_to_pulpino_flags,
-
-   output reg                                   O_user_led,
-   output wire [pKEY_WIDTH-1:0]                 O_key,
-   output wire [pPT_WIDTH-1:0]                  O_textin,
-   output wire [pCT_WIDTH-1:0]                  O_cipherin,
-   output wire                                  O_start,   /* High for one crypto_clk cycle, indicates text ready. */
 
    output reg                                   O_usb_to_pulpino_read
 
 );
 
    reg  [7:0]                   reg_read_data;
-   reg  [pCT_WIDTH-1:0]         reg_crypt_cipherin;
-   reg  [pKEY_WIDTH-1:0]        reg_crypt_key;
-   reg  [pPT_WIDTH-1:0]         reg_crypt_textin;
-   reg  [pPT_WIDTH-1:0]         reg_crypt_textout;
-   reg  [pCT_WIDTH-1:0]         reg_crypt_cipherout;
-   reg                          reg_crypt_go_pulse;
-   wire                         reg_crypt_go_pulse_crypt;
-
-   reg                          busy_usb;
-   reg                          done_r;
-   wire                         done_pulse;
-   wire                         crypt_go_pulse;
-   reg                          go_r;
-   reg                          go;
-   wire [31:0]                  buildtime;
-
-   (* ASYNC_REG = "TRUE" *) reg  [pKEY_WIDTH-1:0] reg_crypt_key_crypt;
-   (* ASYNC_REG = "TRUE" *) reg  [pPT_WIDTH-1:0] reg_crypt_textin_crypt;
-   (* ASYNC_REG = "TRUE" *) reg  [pPT_WIDTH-1:0] reg_crypt_textout_usb;
-   (* ASYNC_REG = "TRUE" *) reg  [pCT_WIDTH-1:0] reg_crypt_cipherout_usb;
-   (* ASYNC_REG = "TRUE" *) reg  [1:0] go_pipe;
-   (* ASYNC_REG = "TRUE" *) reg  [1:0] busy_pipe;
 
    reg [1:0]                    do_read_counter;
 
@@ -116,29 +81,6 @@ module cw305_reg_pulpino #(
            O_usb_to_pulpino_read <= 1'b1;
    end
 
-   always @(posedge crypto_clk) begin
-       done_r <= I_done & pDONE_EDGE_SENSITIVE;
-   end
-   assign done_pulse = I_done & ~done_r;
-
-   always @(posedge crypto_clk) begin
-       if (done_pulse) begin
-           reg_crypt_cipherout <= I_cipherout;
-           reg_crypt_textout   <= I_textout;
-       end
-       reg_crypt_key_crypt <= reg_crypt_key;
-       reg_crypt_textin_crypt <= reg_crypt_textin;
-   end
-
-   always @(posedge usb_clk) begin
-       reg_crypt_cipherout_usb <= reg_crypt_cipherout;
-       reg_crypt_textout_usb   <= reg_crypt_textout;
-   end
-
-   assign O_textin = reg_crypt_textin_crypt;
-   assign O_key = reg_crypt_key_crypt;
-   assign O_start = crypt_go_pulse || reg_crypt_go_pulse_crypt;
-
    //////////////////////////////////
    // read logic:
    //////////////////////////////////
@@ -146,10 +88,10 @@ module cw305_reg_pulpino #(
    always @(*) begin
       if (reg_addrvalid && reg_read) begin
          case (reg_address)
-            `REG_EXT_PULPINO_DATA:      reg_read_data = O_usb_to_pulpino;
-            `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_to_usb;
-            `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_to_ext_flags;
-            `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_to_pulpino_flags;
+            `REG_EXT_PULPINO_DATA:      reg_read_data = O_usb_to_pulpino[reg_bytecnt*8 +: 8];
+            `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_to_usb[reg_bytecnt*8 +: 8];
+            `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_to_ext_flags[reg_bytecnt*8 +: 8];
+            `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_to_pulpino_flags[reg_bytecnt*8 +: 8];
             default:                    reg_read_data = 0;
          endcase
       end
@@ -169,24 +111,16 @@ module cw305_reg_pulpino #(
       if (reset_i) begin
 		 O_usb_to_pulpino <= 32'b0;
 		 O_ext_to_pulpino_flags <= 32'b0;
-         O_user_led <= 0;
-         reg_crypt_go_pulse <= 1'b0;
       end
 
       else begin
          if (reg_addrvalid && reg_write) begin
             case (reg_address)
-			   `REG_EXT_PULPINO_DATA:   O_usb_to_pulpino <= write_data;
-			   `REG_EXT_PULPINO_FLAGS:  O_ext_to_pulpino_flags <= write_data;
+			   `REG_EXT_PULPINO_DATA:   O_usb_to_pulpino[reg_bytecnt*8 +: 8] <= write_data;
+			   `REG_EXT_PULPINO_FLAGS:  O_ext_to_pulpino_flags[reg_bytecnt*8 +: 8] <= write_data;
             endcase
          end
-         // REG_CRYPT_GO register is special: writing it creates a pulse. Reading it gives you the "busy" status.
-         if ( (reg_addrvalid && reg_write && (reg_address == `REG_CRYPT_GO)) )
-            reg_crypt_go_pulse <= 1'b1;
-         else
-            reg_crypt_go_pulse <= 1'b0;
-
-         if ( (reg_addrvalid && reg_write && (reg_address == `REG_CRYPT_GO)) )
+         if ( (reg_addrvalid && reg_write && (reg_address == `REG_EXT_PULPINO_DATA)) )
              do_read_counter <= 2'b11;
          else begin
              if ( do_read_counter != 2'b00 )
@@ -194,62 +128,6 @@ module cw305_reg_pulpino #(
          end
       end
    end
-
-   always @(posedge crypto_clk) begin
-      {go_r, go, go_pipe} <= {go, go_pipe, exttrigger_in};
-   end
-   assign crypt_go_pulse = go & !go_r;
-
-   cdc_pulse U_go_pulse (
-      .reset_i       (reset_i),
-      .src_clk       (usb_clk),
-      .src_pulse     (reg_crypt_go_pulse),
-      .dst_clk       (crypto_clk),
-      .dst_pulse     (reg_crypt_go_pulse_crypt)
-   );
-
-   always @(posedge usb_clk)
-      {busy_usb, busy_pipe} <= {busy_pipe, I_busy};
-
-
-   `ifdef ILA_REG
-       ila_0 U_reg_ila (
-	.clk            (usb_clk),                      // input wire clk
-	.probe0         (reg_address[7:0]),             // input wire [7:0]  probe0  
-	.probe1         (reg_bytecnt),                  // input wire [6:0]  probe1 
-	.probe2         (read_data),                    // input wire [7:0]  probe2 
-	.probe3         (write_data),                   // input wire [7:0]  probe3 
-	.probe4         (reg_read),                     // input wire [0:0]  probe4 
-	.probe5         (reg_write),                    // input wire [0:0]  probe5 
-	.probe6         (reg_addrvalid),                // input wire [0:0]  probe6 
-	.probe7         (reg_read_data),                // input wire [7:0]  probe7 
-	.probe8         (exttrigger_in),                // input wire [0:0]  probe8 
-	.probe9         (1'b0),                         // input wire [0:0]  probe9
-	.probe10        (reg_crypt_go_pulse)            // input wire [0:0]  probe10
-       );
-   `endif
-
-   `ifdef ILA_CRYPTO
-       ila_1 U_reg_aes (
-	.clk            (crypto_clk),                   // input wire clk
-	.probe0         (O_start),                      // input wire [0:0]  probe0  
-	.probe1         (I_done),                       // input wire [0:0]  probe1 
-	.probe2         (I_cipherout[7:0]),             // input wire [7:0]  probe2 
-	.probe3         (O_textin[7:0]),                // input wire [7:0]  probe3 
-	.probe4         (done_pulse)                    // input wire [0:0]  probe4 
-       );
-   `endif
-
-   `ifndef __ICARUS__
-      USR_ACCESSE2 U_buildtime (
-         .CFGCLK(),
-         .DATA(buildtime),
-         .DATAVALID()
-      );
-   `else
-      assign buildtime = 0;
-   `endif
-
 
 endmodule
 
