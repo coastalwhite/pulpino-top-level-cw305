@@ -77,3 +77,8 @@ def pulpino_ext_write(word):
     await ext_read_flicker != 1
     pulpino_ext_write_flicker = 0
 ```
+
+## TODO
+
+- [ ] Rename registers in `cw305_defines.v`
+- [ ] Remove many of the unused parts in `cw305_*.v` files
