@@ -34,7 +34,6 @@ module clocks (
     output wire         usb_clk_buf,
     input  wire         I_j16_sel,
     input  wire         I_k16_sel,
-    input  wire [4:0]   I_clock_reg,
     input  wire         I_cw_clkin,
     input  wire         I_pll_clk1,
 
@@ -46,16 +45,8 @@ module clocks (
     wire cclk_output_ext;              
     wire usb_clk_bufg;
 
-    // Select crypto clock based on registers + DIP switches
-    assign cclk_src_is_ext = (I_clock_reg[2:0] == 3'b001) ? 0 : //Registers = PLL1
-                             (I_clock_reg[2:0] == 3'b101) ? 1 : //Registers = 20pin
-                             ((I_clock_reg[0] == 1'b0) && (I_j16_sel == 1'b1)) ? 1: //DIP = 20pin
-                             0; //Default PLL1
-
-    assign cclk_output_ext = ((I_clock_reg[0] == 1'b1) && (I_clock_reg[4:3] == 2'b00)) ? 0 : //Registers = off
-                             ((I_clock_reg[0] == 1'b1) && (I_clock_reg[4:3] == 2'b01)) ? 1 : //Registers = on
-                             ((I_clock_reg[0] == 1'b0) && (I_k16_sel == 1'b1)) ? 1 : //DIP = on
-                             0; //Default off
+    assign cclk_src_is_ext = I_j16_sel; // Default PLL1
+    assign cclk_output_ext = I_k16_sel; // Default off
 
 `ifdef __ICARUS__
     assign O_cryptoclk = cclk_src_is_ext? I_cw_clkin : I_pll_clk1;

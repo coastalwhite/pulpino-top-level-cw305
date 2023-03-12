@@ -182,7 +182,6 @@ module cw305_top #(
        .usb_clk_buf             (usb_clk_buf),
        .I_j16_sel               (j16_sel),
        .I_k16_sel               (k16_sel),
-       .I_clock_reg             (clk_settings),
        .I_cw_clkin              (tio_clkin),
        .I_pll_clk1              (pll_clk1),
        .O_cw_clkout             (tio_clkout),
