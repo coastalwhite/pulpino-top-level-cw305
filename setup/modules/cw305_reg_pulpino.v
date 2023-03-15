@@ -54,32 +54,17 @@ module cw305_reg_pulpino #(
                                                                  // present on write_data
    input  wire                                  reg_addrvalid,   // Address valid flag
 
-   // from top:
-   input  wire                                  exttrigger_in,
-
    // register inputs:
-   input  wire [31:0]                  			I_pulpino_to_usb,
-   input  wire [31:0]                  			I_pulpino_to_ext_flags,
+   input  wire [7:0]                  			I_pulpino_data,
+   input  wire [7:0]                  			I_pulpino_flags,
 
    // register outputs:
-   output reg  [31:0]                  			O_usb_to_pulpino,
-   output reg  [31:0]                  			O_ext_to_pulpino_flags,
-
-   output reg                                   O_usb_to_pulpino_read
+   output reg  [7:0]                  			O_ext_data,
+   output reg  [7:0]                  			O_ext_flags
 
 );
 
    reg  [7:0]                   reg_read_data;
-
-   reg [1:0]                    do_read_counter;
-
-   initial O_usb_to_pulpino_read <= 1'b0;
-   always @ (posedge crypto_clk) begin
-       if ( do_read_counter == 2'b00 )
-           O_usb_to_pulpino_read <= 1'b0;
-       else
-           O_usb_to_pulpino_read <= 1'b1;
-   end
 
    //////////////////////////////////
    // read logic:
@@ -88,10 +73,10 @@ module cw305_reg_pulpino #(
    always @(*) begin
       if (reg_addrvalid && reg_read) begin
          case (reg_address)
-            `REG_EXT_PULPINO_DATA:      reg_read_data = O_usb_to_pulpino[reg_bytecnt*8 +: 8];
-            `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_to_usb[reg_bytecnt*8 +: 8];
-            `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_to_ext_flags[reg_bytecnt*8 +: 8];
-            `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_to_pulpino_flags[reg_bytecnt*8 +: 8];
+            `REG_EXT_PULPINO_DATA:      reg_read_data = O_ext_data;
+            `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_data;
+            `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_flags;
+            `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_flags;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -109,22 +94,16 @@ module cw305_reg_pulpino #(
    //////////////////////////////////
    always @(posedge usb_clk) begin
       if (reset_i) begin
-		 O_usb_to_pulpino <= 32'b0;
-		 O_ext_to_pulpino_flags <= 32'b0;
+		 O_ext_data  <= 8'b0;
+		 O_ext_flags <= 8'b0;
       end
 
       else begin
          if (reg_addrvalid && reg_write) begin
             case (reg_address)
-			   `REG_EXT_PULPINO_DATA:   O_usb_to_pulpino[reg_bytecnt*8 +: 8] <= write_data;
-			   `REG_EXT_PULPINO_FLAGS:  O_ext_to_pulpino_flags[reg_bytecnt*8 +: 8] <= write_data;
+			   `REG_EXT_PULPINO_DATA:   O_ext_data  <= write_data;
+			   `REG_EXT_PULPINO_FLAGS:  O_ext_flags <= write_data;
             endcase
-         end
-         if ( (reg_addrvalid && reg_write && (reg_address == `REG_EXT_PULPINO_DATA)) )
-             do_read_counter <= 2'b11;
-         else begin
-             if ( do_read_counter != 2'b00 )
-                 do_read_counter <= do_read_counter - 1;
          end
       end
    end

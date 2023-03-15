@@ -79,12 +79,11 @@ module cw305_top #(
     wire resetn = pushbutton;
     wire reset = !resetn;
 
-	wire [31:0] pulpino_to_usb_reg;
-	wire [31:0] usb_to_pulpino_reg;
-    wire        usb_to_pulpino_read_reg;
+	wire [7:0] pulpino_data;
+	wire [7:0] ext_data;
 
-	wire [31:0] pulpino_to_ext_flags;
-	wire [31:0] ext_to_pulpino_flags;
+	wire [7:0] pulpino_flags;
+	wire [7:0] ext_flags;
 
     // USB CLK Heartbeat
     reg [24:0] usb_timer_heartbeat;
@@ -92,9 +91,9 @@ module cw305_top #(
     assign led1 = usb_timer_heartbeat[24];
 
     // CRYPT CLK Heartbeat
-    reg [20:0] pulpino_clk_heartbeat;
-    always @(posedge pulpino_clk) pulpino_clk_heartbeat <= pulpino_clk_heartbeat +  23'd1;
-    assign led2 = pulpino_clk_heartbeat[20];
+    reg [24:0] pulpino_clk_heartbeat;
+    always @(posedge pulpino_clk) pulpino_clk_heartbeat <= pulpino_clk_heartbeat +  25'd1;
+    assign led2 = pulpino_clk_heartbeat[24];
 
 
     cw305_usb_reg_fe #(
@@ -138,15 +137,11 @@ module cw305_top #(
        .reg_write               (reg_write), 
        .reg_addrvalid           (reg_addrvalid),
 
-       .exttrigger_in           (usb_trigger),
+	   .I_pulpino_data		    (pulpino_data),
+	   .I_pulpino_flags	        (pulpino_flags),
 
-	   .I_pulpino_to_usb		(pulpino_to_usb_reg),
-	   .I_pulpino_to_ext_flags	(pulpino_to_ext_flags),
-
-	   .O_usb_to_pulpino		(usb_to_pulpino_reg),
-	   .O_ext_to_pulpino_flags	(ext_to_pulpino_flags),
-
-       .O_usb_to_pulpino_read   (usb_to_pulpino_read_reg)
+	   .O_ext_data		        (ext_data),
+	   .O_ext_flags	            (ext_flags)
     );
 
     assign usb_data = isout? usb_dout : 8'bZ;
@@ -166,72 +161,39 @@ module cw305_top #(
     wire [31:0] gpio_in;
     wire [31:0] gpio_out;
 
-    wire [7:0]  usb_to_pulpino_data;
-    wire [7:0]  pulpino_to_usb_data;
-
 	wire ext_read_flicker;
 	wire ext_write_flicker;
 
-	wire usb_read_flicker;
-	wire usb_write_flicker;
+	wire pulpino_read_flicker;
+	wire pulpino_write_flicker;
 
-	wire pulpino_ext_read_flicker;
-	wire pulpino_ext_write_flicker;
-	wire pulpino_usb_read_flicker;
-	wire pulpino_usb_write_flicker;
+    assign ext_read_flicker     = ext_flags[0];
+    assign ext_write_flicker    = ext_flags[1];
 
-    assign ext_read_flicker     = ext_to_pulpino_flags[0];
-    assign ext_write_flicker    = ext_to_pulpino_flags[1];
-
-    assign pulpino_to_ext_flags[0] = pulpino_ext_read_flicker;
-    assign pulpino_to_ext_flags[1] = pulpino_ext_write_flicker;
+    assign pulpino_flags[0] = pulpino_read_flicker;
+    assign pulpino_flags[1] = pulpino_write_flicker;
 
     assign gpio_dir      = 32'h0000_0000;
     assign gpio_in       = {
-        20'b0,
+        22'b0,
 		ext_write_flicker,
 		ext_read_flicker,
-		usb_write_flicker,
-		usb_read_flicker,
-        usb_to_pulpino_reg
+        ext_data
     };
 
-    assign pulpino_ext_write_flicker = gpio_out[11];
-    assign pulpino_ext_read_flicker = gpio_out[10];
-    assign pulpino_usb_write_flicker = gpio_out[9];
-    assign pulpino_usb_read_flicker = gpio_out[8];
-    assign pulpino_to_usb_data = gpio_out[7:0];
+    assign pulpino_write_flicker = gpio_out[9];
+    assign pulpino_read_flicker  = gpio_out[8];
+    assign pulpino_data          = gpio_out[7:0];
     
     assign led3 = (
-        ( k15_sel &  l14_sel & pulpino_ext_read_flicker)  |
-        ( k15_sel & ~l14_sel & pulpino_ext_write_flicker) |
+        ( k15_sel &  l14_sel & pulpino_read_flicker)  |
+        ( k15_sel & ~l14_sel & pulpino_write_flicker) |
         (~k15_sel &  l14_sel & ext_read_flicker)          |
         (~k15_sel & ~l14_sel & ext_write_flicker)
     );
 
-    usb_pulpino_channel inst (
-        .reset_i                       (reset),
-
-        // USB -> Pulpino
-        .usb_to_pulpino_reg            (usb_to_pulpino_reg),
-        .usb_to_pulpino_data           (usb_to_pulpino_data),
-        .usb_to_pulpino_read_reg       (usb_to_pulpino_read_reg),
-
-        // Pulpino -> USB
-        .pulpino_to_usb_reg            (pulpino_to_usb_reg),
-        .pulpino_to_usb_data           (usb_to_pulpino_data),
-
-		.usb_read_flicker			   (usb_read_flicker),
-		.usb_write_flicker             (usb_write_flicker),
-
-		.pulpino_read_flicker          (pulpino_usb_read_flicker),
-		.pulpino_write_flicker         (pulpino_usb_write_flicker),
-    
-        .clk                           (pulpino_clk)
-    );
-
-	// dummy_pulpino U_proc (
-	pulpino U_proc (
+//	dummy_pulpino U_proc (
+	 pulpino U_proc (
   		.clk                           (pulpino_clk),
   		.rst_n                         (resetn),
 
