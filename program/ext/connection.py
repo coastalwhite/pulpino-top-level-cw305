@@ -147,6 +147,7 @@ class PulpinoConnection():
         ]
 
         for b in bs:
+            print("Sent byte: {}".format(b))
             self.send_byte(b)
 
     def receive_word(self):
@@ -164,13 +165,14 @@ class PulpinoConnection():
         print("Start Program")
         self.send_word(start)
         print("Sent start")
-        print("start: 0x{:x}".format(self.receive_word()))
         self.send_word(end)
         print("Sent end")
-        print("end: 0x{:x}".format(self.receive_word()))
 
-        for b in ram_memory:
-            print("Sent Byte")
+        print("start: 0x{:x} -> 0x{:x}".format(start, self.receive_word()))
+        print("end:   0x{:x} -> 0x{:x}".format(end, self.receive_word()))
+
+        for i, b in enumerate(ram_memory):
+            print("{}: Sent Byte {}".format(i, b))
             self.send_byte(b)
 
     def get_raw(self):

@@ -143,7 +143,6 @@ impl MemoryRange {
     pub fn program() -> bool {
         GpioOut::led(true);
 
-        // Ensure the `start` and `end` are word aligned.
         let mut start = read_word();
         let end       = read_word();
 
