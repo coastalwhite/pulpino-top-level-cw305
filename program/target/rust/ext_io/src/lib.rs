@@ -1,3 +1,5 @@
+#![no_std]
+
 struct GpioDir;
 struct GpioIn;
 struct GpioOut;
@@ -35,23 +37,13 @@ impl GpioIn {
     }
 
     #[inline]
-    fn usb_read_flicker() -> bool {
+    fn ext_read_flicker() -> bool {
         Self::read() & 0x100 != 0
     }
 
     #[inline]
-    fn usb_write_flicker() -> bool {
-        Self::read() & 0x200 != 0
-    }
-
-    #[inline]
-    fn ext_read_flicker() -> bool {
-        Self::read() & 0x400 != 0
-    }
-
-    #[inline]
     fn ext_write_flicker() -> bool {
-        Self::read() & 0x800 != 0
+        Self::read() & 0x200 != 0
     }
 }
 
@@ -62,80 +54,83 @@ impl GpioOut {
     }
 
     #[inline]
-    fn usb_read_flicker() {
+    fn toggle_read_flicker() {
         Self::write(Self::read() ^ 0x0000_0100)
     }
 
     #[inline]
-    fn usb_write_flicker() {
+    fn toggle_write_flicker() {
         Self::write(Self::read() ^ 0x0000_0200)
     }
 
     #[inline]
-    fn ext_read_flicker() {
-        Self::write(Self::read() ^ 0x0000_0400)
-    }
-
-    #[inline]
-    fn ext_write_flicker() {
-        Self::write(Self::read() ^ 0x0000_0800)
+    fn led(value: bool) {
+        Self::write((Self::read() & 0xFFFF_FBFF) | if value { 0x400 } else { 0x000 })
     }
 }
 
 #[inline]
-fn usb_read() -> u32 {
-    let mut word: u32 = 0;
-    
-    for i in 0..4 {
-        while GpioIn::usb_write_flicker() == (i & 1 != 0) { }
-
-		word <<= 8;
-		word |= GpioIn::data() as u32;
-
-        GpioOut::usb_read_flicker();
-    }
-
-    return word;
-}
-
-#[inline]
-fn usb_write(mut word: u32) {
-    for i in 0..4 {
-        GpioOut::data((word & 0xFF) as u8);
-		word >>= 8;
-		
-        GpioOut::usb_write_flicker();
-
-        while GpioIn::usb_read_flicker() == (i & 0x1 != 0) {}
-    }
-
-	GpioOut::data(0x00);
+pub fn led(value: bool) {
+    GpioOut::led(value);
 }
 
 /// Blocking read from the external machine
-pub fn read() -> u32 {
+#[inline]
+pub fn read() -> u8 {
 	// Wait for the external to write something
     while !GpioIn::ext_write_flicker() {}
 
-	let word = usb_read();
+	let byte = GpioIn::data();
 
 	// Coordinate to get back to the original state
-	GpioOut::ext_read_flicker();
+	GpioOut::toggle_read_flicker();
     while GpioIn::ext_write_flicker() {}
-	GpioOut::ext_read_flicker();
+	GpioOut::toggle_read_flicker();
 
-	return word;
+	byte
+}
+
+/// Blocking word read from the external machine. This will read bytes in big endian.
+#[inline]
+pub fn read_word() -> u32 {
+    let bytes = [read(), read(), read(), read()];
+    u32::from_be_bytes(bytes)
+}
+
+/// Blocking word write to the external machine. This will write bytes in big endian.
+#[inline]
+pub fn write_word(word: u32) {
+    for b in word.to_be_bytes() {
+        write(b);
+    }
 }
 
 /// Blocking write to the external machine
-pub fn write(word: u32) {
-	usb_write(word);
+#[inline]
+pub fn write(byte: u8) {
+    while GpioIn::ext_read_flicker() {}
+	GpioOut::data(byte);
 
 	// Coordinate to get back to the original state
-	GpioOut::ext_write_flicker();
+	GpioOut::toggle_write_flicker();
     while !GpioIn::ext_read_flicker() {}
-	GpioOut::ext_write_flicker();
+	GpioOut::toggle_write_flicker();
 }
+
+// #[inline]
+// pub fn between() {
+//     let mut start = read();
+//     let end = read();
+//
+//     loop {
+//         if start == end {
+//             break;
+//         }
+//
+//         write(start);
+//         start = start.wrapping_add(1);
+//     }
+// }
 
 pub struct MemoryRange;
 
@@ -144,26 +139,29 @@ impl MemoryRange {
     /// 
     /// Then reads one word for each of the word-aligned addresses between them and writes the
     /// read word to that address.
-    pub fn program() {
-        // Ensure the `start` and `end` are word aligned.
-        let start = read() & 0xFFFF_FFFC;
-        let end   = read() & 0xFFFF_FFFC;
+    #[inline]
+    pub fn program() -> bool {
+        GpioOut::led(true);
 
-        for addr in (start..end).step_by(4) {
-            let addr = addr as *mut u32;
+        // Ensure the `start` and `end` are word aligned.
+        let mut start = read_word();
+        let end       = read_word();
+
+        write_word(start);
+        write_word(end);
+
+        if start == end {
+            return false;
+        }
+
+        while start != end {
+            let addr = start as *mut u8;
             unsafe { addr.write_volatile(read()) };
+            start = start.wrapping_add(1);
         }
-    }
 
-    /// Reads a start and end and echoes the words at those ddresses.
-    pub fn echo() {
-        // Ensure the `start` and `end` are word aligned.
-        let start = read() & 0xFFFF_FFFC;
-        let end   = read() & 0xFFFF_FFFC;
+        GpioOut::led(false);
 
-        for addr in (start..end).step_by(4) {
-            let addr = addr as *mut u32;
-            write(unsafe { addr.read_volatile() });
-        }
+        true
     }
 }
