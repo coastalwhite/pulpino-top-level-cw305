@@ -92,13 +92,13 @@ module cache (
     integer i;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
-            state <= NoRequest;
+            state       <= NoRequest;
 
-            current_set   <= 6'b0;
+            current_set <= 6'b0;
 
-            proc_data <= 32'b0;
-            proc_type <= CacheRead;
-            proc_addr <= 32'b0;
+            proc_data   <= 32'b0;
+            proc_type   <= CacheRead;
+            proc_addr   <= 32'b0;
 
             bs_req_type <= BackingStoreRead;
             bs_req_data <= 32'b0;
@@ -112,14 +112,13 @@ module cache (
             end
         end
         else begin
-            state <= next_state;
+            state       <= next_state;
 
-            current_set   <= next_set;
-            current_block <= next_block;
+            current_set <= next_set;
 
-            proc_data <= next_proc_data;
-            proc_type <= next_proc_type;
-            proc_addr <= next_proc_addr;
+            proc_data   <= next_proc_data;
+            proc_type   <= next_proc_type;
+            proc_addr   <= next_proc_addr;
 
             bs_req_type <= next_bs_req_type;
             bs_req_data <= next_bs_req_data;
@@ -142,24 +141,24 @@ module cache (
         bs_req_done, bs_O_data,
         proc_type, proc_data, proc_addr
      ) begin
-        next_state     = state;
+        next_state         = state;
 
-        next_set       = current_set;
+        next_set           = current_set;
 
-        next_proc_data = proc_data;
-        next_proc_addr = proc_addr;
-        next_proc_type = proc_type;
+        next_proc_data     = proc_data;
+        next_proc_addr     = proc_addr;
+        next_proc_type     = proc_type;
 
-        next_bs_req_type = bs_req_type;
-        next_bs_req_data = bs_req_data;
+        next_bs_req_type   = bs_req_type;
+        next_bs_req_data   = bs_req_data;
 
-        next_do_write      = 1'b0;
-        next_do_invalidate = 1'b0;
-        next_content   = 32'b0;
+        next_do_write      =  1'b0;
+        next_do_invalidate =  1'b0;
+        next_content       = 32'b0;
         
         case (state)
             NoRequest: begin
-                next_set  = 6'b0;
+                next_set       = 6'b0;
 
                 next_proc_data = 32'b0;
                 next_proc_type = CacheRead; // CacheRead is just the default type
@@ -174,7 +173,7 @@ module cache (
                 end
             end
             FindSet: begin
-                next_set = proc_addr[7:2];
+                next_set   = proc_addr[7:2];
 
                 next_state = FindBlock;
             end
@@ -188,14 +187,14 @@ module cache (
                             next_state = Done;
                         else begin
                             next_bs_req_type = BackingStoreRead;
-                            next_state = RequestBackingStore;
+                            next_state       = RequestBackingStore;
                         end
                     end
                     CacheWrite: begin
                         next_bs_req_type = BackingStoreWrite;
                         next_bs_req_data = proc_data;
 
-                        next_state = RequestBackingStore;
+                        next_state       = RequestBackingStore;
                     end
                     CacheFlush: begin
                         if (
