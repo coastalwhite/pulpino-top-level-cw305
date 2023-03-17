@@ -19,10 +19,19 @@ module cache (
     // 32 bits = content
     // -------+
     // 57 bits
-    reg [24 + 1 + 31:0] sets [0:0][63:0];
+    reg [24 + 1 + 31:0] sets [63:0][0:0];
     
     reg [6:0] current_set;
     reg [6:0] next_set;
+
+    reg [0:0] current_block;
+    reg [0:0] next_block;
+
+    reg [31:0] proc_data;
+    reg [31:0] next_proc_data;
+
+    reg        proc_type;
+    reg        next_proc_type;
     
     reg [31:0] proc_addr;
     reg [31:0] next_proc_addr;
@@ -44,98 +53,158 @@ module cache (
     localparam
         RequestRead  = 1'b0,
         RequestWrite = 1'b1;
-    
-    localparam
-        DataFromCache = 1'b0,
-        DataFromInput = 1'b1;
         
     assign req_done = state == Done;
-    assign O_data   = sets[current_set][0];
+    assign O_data   = (req_done && proc_type == RequestRead) ? 
+        sets[current_set][current_block][31:0] : 32'b0;
     
     reg next_bs_req_type;
-    reg bg_req_type;
+    reg bs_req_type;
     
-    reg next_bg_input_data_type;
-    reg bg_input_data_type;
+    reg next_bs_req_data;
+    reg bs_req_data;
     
-    wire [31:0] backing_store_O_data;
-    wire        backing_store_req_done;
+    wire [31:0] bs_O_data;
+    wire        bs_req_done;
     
     backing_store U_backing_store (
         .clk         (clk),
         .reset       (reset),
 
         .req_addr    (proc_addr),
-        .req_data    (),
-        .req_type    (),
+        .req_data    (bs_req_data),
+        .req_type    (bs_req_type),
     
         .req_do      (state == RequestBackingStore),
     
-        .O_data      (backing_store_O_data),
-        .req_done    (backing_store_req_done)
+        .O_data      (bs_O_data),
+        .req_done    (bs_req_done)
     );
     
     
-    integer i;
+    integer i, j;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
             state <= NoRequest;
-            current_set <= 6'b0;
+
+            current_set   <= 6'b0;
+            current_block <= 1'b0;
+
+            proc_data <= 32'b0;
+            proc_type <=  1'b0;
             proc_addr <= 32'b0;
-            for (i=0; i<1024; i=i+1) begin
-                sets[i][0] <= 57'b0;
+
+            bs_req_type <=  1'b0;
+            bs_req_data <= 32'b0;
+
+            for (i = 0; i < 64; i = i + 1) begin
+				for (j = 0; j < 1; j = j + 1) begin
+					sets[i][j][56:0] <= 0;
+				end
             end
         end
         else begin
             state <= next_state;
-            current_set <= next_set;
+
+            current_set   <= next_set;
+            current_block <= next_block;
+
+            proc_data <= next_proc_data;
+            proc_type <= next_proc_type;
             proc_addr <= next_proc_addr;
+
+            bs_req_type <= next_bs_req_type;
+            bs_req_data <= next_bs_req_data;
             
-            if (next_do_write)
-                sets[current_set][0] <= next_content;
+			if (next_do_write)
+				sets[current_set][current_block] <= {
+					proc_addr[31:8], // Tag
+					1'b1,            // Validity
+					next_content     // Content
+				};
         end
     end
     
-    always @ (state, req_addr, req_data, req_type, req_do) begin
+    always @ (
+        state,
+        current_set, current_block,
+        req_addr, req_data, req_type, req_do,
+        bs_req_done, bs_O_data,
+        proc_type, proc_data, proc_addr
+     ) begin
         next_state     = state;
+
         next_set       = current_set;
+        next_block     = current_block;
+
+        next_proc_data = proc_data;
         next_proc_addr = proc_addr;
+        next_proc_type = proc_type;
+
+        next_bs_req_type = bs_req_type;
+        next_bs_req_data = bs_req_data;
+
         next_do_write  = 1'b0;
         next_content   = 32'b0;
         
         case (state)
             NoRequest: begin
                 next_set  = 6'b0;
+                next_block = 1'b0;
+
+                next_proc_data = 32'b0;
+                next_proc_type =  1'b0;
+                next_proc_addr = 32'b0;
+
                 if (req_do) begin
+                    next_proc_data = req_data;
+                    next_proc_type = req_type;
+                    next_proc_addr = req_addr;
+
                     next_state = FindSet;
                 end
             end
             FindSet: begin
-                next_set = req_addr[7:2];
+                next_set = proc_addr[7:2];
+
                 next_state = FindBlock;
             end
             FindBlock: begin
+                // TODO: Change for different associavity
+                // Change for replacement policy
+                next_block = 1'b0;
+
                 if (
-                    sets[current_set][0][32] &&                   // Validity
-                    sets[current_set][0][56:33] == req_addr[31:8] // Correct Tag
+                    sets[current_set][0][32] &&                       // Validity
+                    sets[current_set][0][56:33] == proc_addr[31:8] && // Correct Tag
+                    proc_type == RequestRead
                 )
                     next_state = Done;
-                else
+                else begin
+                    next_bs_req_type = proc_type;
+                    if (proc_type == RequestWrite)
+                        next_bs_req_data = proc_data;
+
                     next_state = RequestBackingStore;
+                end
             end
             RequestBackingStore: begin
                 next_state = WaitBackingStore;
             end
-//            WaitBackingStore: begin
-//                if (backingstore_req_done) begin
-//                    next_content  = backingstore_O_data;
-//                    next_do_write = 1'b1;
-//                    next_state = Done;
-//                end
-//            end
-//            BackingStoreDone: begin
-//                next_state = NoRequest
-//            end
+            WaitBackingStore: begin
+                if (bs_req_done) begin
+                    if (proc_type == RequestRead)
+                        next_content  = bs_O_data;
+                    else
+                        next_content  = proc_data;
+                    next_do_write = 1'b1;
+
+                    next_bs_req_type = 1'b0;
+                    next_bs_req_data = 32'b0;
+
+                    next_state = Done;
+                end
+            end
             Done: begin
                 next_state = NoRequest;
             end
