@@ -7,7 +7,7 @@ module cache (
 
     input wire [31:0] req_addr,
     input wire [31:0] req_data,
-    input wire req_type,
+    input wire  [1:0] req_type,
     
     input wire req_do,
     
@@ -19,7 +19,7 @@ module cache (
     // 32 bits = content
     // -------+
     // 57 bits
-    reg [24 + 1 + 31:0] sets [63:0][0:0];
+    reg [(24 + 1 + 31):0] sets [63:0];
     
     reg [6:0] current_set;
     reg [6:0] next_set;
@@ -30,13 +30,14 @@ module cache (
     reg [31:0] proc_data;
     reg [31:0] next_proc_data;
 
-    reg        proc_type;
-    reg        next_proc_type;
+    reg  [1:0] proc_type;
+    reg  [1:0] next_proc_type;
     
     reg [31:0] proc_addr;
     reg [31:0] next_proc_addr;
     
     reg        next_do_write;
+    reg        next_do_invalidate;
     reg [31:0] next_content;
     
     reg [2:0] state;
@@ -51,18 +52,19 @@ module cache (
         Done                = 3'b101;
      
     localparam
-        RequestRead  = 1'b0,
-        RequestWrite = 1'b1;
+        RequestRead         = 2'b00,
+        RequestWrite        = 2'b01,
+		RequestFlush        = 2'b10;
         
     assign req_done = state == Done;
     assign O_data   = (req_done && proc_type == RequestRead) ? 
-        sets[current_set][current_block][31:0] : 32'b0;
+        sets[current_set][31:0] : 32'b0;
     
     reg next_bs_req_type;
     reg bs_req_type;
     
-    reg next_bs_req_data;
-    reg bs_req_data;
+    reg [31:0] next_bs_req_data;
+    reg [31:0] bs_req_data;
     
     wire [31:0] bs_O_data;
     wire        bs_req_done;
@@ -91,16 +93,14 @@ module cache (
             current_block <= 1'b0;
 
             proc_data <= 32'b0;
-            proc_type <=  1'b0;
+            proc_type <=  2'b0;
             proc_addr <= 32'b0;
 
-            bs_req_type <=  1'b0;
+            bs_req_type <=  2'b0;
             bs_req_data <= 32'b0;
 
             for (i = 0; i < 64; i = i + 1) begin
-				for (j = 0; j < 1; j = j + 1) begin
-					sets[i][j][56:0] <= 0;
-				end
+                sets[i][56:0] <= 0;
             end
         end
         else begin
@@ -117,11 +117,13 @@ module cache (
             bs_req_data <= next_bs_req_data;
             
 			if (next_do_write)
-				sets[current_set][current_block] <= {
+				sets[current_set] <= {
 					proc_addr[31:8], // Tag
 					1'b1,            // Validity
 					next_content     // Content
 				};
+            if (next_do_invalidate)
+				sets[current_set][32] <= 1'b0;
         end
     end
     
@@ -144,7 +146,8 @@ module cache (
         next_bs_req_type = bs_req_type;
         next_bs_req_data = bs_req_data;
 
-        next_do_write  = 1'b0;
+        next_do_write      = 1'b0;
+        next_do_invalidate = 1'b0;
         next_content   = 32'b0;
         
         case (state)
@@ -153,7 +156,7 @@ module cache (
                 next_block = 1'b0;
 
                 next_proc_data = 32'b0;
-                next_proc_type =  1'b0;
+                next_proc_type =  2'b0;
                 next_proc_addr = 32'b0;
 
                 if (req_do) begin
@@ -174,30 +177,56 @@ module cache (
                 // Change for replacement policy
                 next_block = 1'b0;
 
-                if (
-                    sets[current_set][0][32] &&                       // Validity
-                    sets[current_set][0][56:33] == proc_addr[31:8] && // Correct Tag
-                    proc_type == RequestRead
-                )
-                    next_state = Done;
-                else begin
-                    next_bs_req_type = proc_type;
-                    if (proc_type == RequestWrite)
+                case (proc_type)
+                    RequestRead: begin
+                        if (
+                            sets[current_set][32] &&                       // Validity
+                            sets[current_set][56:33] == proc_addr[31:8]    // Correct Tag
+                        )
+                            next_state = Done;
+                        else begin
+                            next_bs_req_type = 1'b0; // Read
+                            next_state = RequestBackingStore;
+                        end
+                    end
+                    RequestWrite: begin
+                        next_bs_req_type = 1'b1; // Write
                         next_bs_req_data = proc_data;
 
-                    next_state = RequestBackingStore;
-                end
+                        next_state = RequestBackingStore;
+                    end
+                    RequestFlush: begin
+                        if (
+                            sets[current_set][32] &&                       // Validity
+                            sets[current_set][56:33] == proc_addr[31:8]    // Correct Tag
+                        ) begin
+                            next_bs_req_type = 1'b1; // Write
+                            next_bs_req_data = sets[current_set][31:0];
+
+                            next_state = RequestBackingStore;
+                        end
+                        else begin
+                            next_state = Done;
+                        end
+                    end
+                endcase
             end
             RequestBackingStore: begin
                 next_state = WaitBackingStore;
             end
             WaitBackingStore: begin
                 if (bs_req_done) begin
-                    if (proc_type == RequestRead)
+					if (proc_type == RequestRead) begin
                         next_content  = bs_O_data;
-                    else
+						next_do_write = 1'b1;
+					end
+					else if (proc_type == RequestWrite) begin
                         next_content  = proc_data;
-                    next_do_write = 1'b1;
+						next_do_write = 1'b1;
+					end
+					else if (proc_type == RequestFlush) begin
+						next_do_invalidate = 1'b1;
+					end
 
                     next_bs_req_type = 1'b0;
                     next_bs_req_data = 32'b0;

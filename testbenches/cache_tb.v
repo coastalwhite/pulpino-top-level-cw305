@@ -6,7 +6,7 @@ module cache_tb();
     
     reg [31:0] req_addr;
     reg [31:0] req_data;
-    reg        req_type;
+    reg [ 1:0] req_type;
     reg        req_do;
     
     wire [31:0] O_data;
@@ -33,7 +33,7 @@ module cache_tb();
         req_do   <=  1'b0;
         req_addr <= 32'h0000_0000;
         req_data <= 32'h0000_0000;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         
         #10
         reset <= 1'b0;
@@ -41,7 +41,7 @@ module cache_tb();
         #10
         req_addr <= 32'h0000_03FC;
         req_data <= 32'h0000_0000;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         req_do   <=  1'b1;
         
         #10
@@ -53,7 +53,7 @@ module cache_tb();
         #70
         req_addr <= 32'h0000_0200;
         req_data <= 32'h0000_0000;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         req_do   <=  1'b1;
         
         #10
@@ -65,7 +65,7 @@ module cache_tb();
         #70
         req_addr <= 32'h0000_03FC;
         req_data <= 32'hAABB_CCDD;
-        req_type <=  1'b1;
+        req_type <=  2'b01;
         req_do   <=  1'b1;
         
         #10
@@ -74,12 +74,12 @@ module cache_tb();
         #10
         req_addr <= 32'h2222_2222;
         req_data <= 32'h3333_3333;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         
         #70
         req_addr <= 32'h0000_0200;
         req_data <= 32'h1234_5678;
-        req_type <=  1'b1;
+        req_type <=  2'b01;
         req_do   <=  1'b1;
         
         #10
@@ -88,12 +88,12 @@ module cache_tb();
         #10
         req_addr <= 32'h2222_2222;
         req_data <= 32'h3333_3333;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         
         #70
         req_addr <= 32'h0000_03FC;
         req_data <= 32'h0000_0000;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
         req_do   <=  1'b1;
         
         #10
@@ -105,7 +105,34 @@ module cache_tb();
         #50
         req_addr <= 32'h0000_0200;
         req_data <= 32'h0000_0000;
-        req_type <=  1'b0;
+        req_type <=  2'b00;
+        req_do   <=  1'b1;
+        
+        #10
+        req_do   <=  1'b0;
+        
+        #50
+        req_addr <= 32'h0000_0000;
+
+        #50
+        req_addr <= 32'h0000_0200;
+        req_data <= 32'h0000_0000;
+        req_type <=  2'b10;
+        req_do   <=  1'b1;
+        
+        #10
+        req_do   <=  1'b0;
+
+        #10
+        req_type <=  2'b00;
+        
+        #50
+        req_addr <= 32'h0000_0000;
+
+        #70
+        req_addr <= 32'h0000_0200;
+        req_data <= 32'h0000_0000;
+        req_type <=  2'b00;
         req_do   <=  1'b1;
         
         #10
