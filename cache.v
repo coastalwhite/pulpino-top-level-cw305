@@ -181,7 +181,7 @@ module cache (
                 case (proc_type)
                     CacheRead: begin
                         if (
-                            sets[current_set][32] &&                       // Validity
+                            sets[current_set][32] == CacheLineValid &&     // Validity
                             sets[current_set][56:33] == proc_addr[31:8]    // Correct Tag
                         )
                             next_state = Done;
@@ -198,7 +198,7 @@ module cache (
                     end
                     CacheFlush: begin
                         if (
-                            sets[current_set][32] &&                       // Validity
+                            sets[current_set][32] == CacheLineValid &&     // Validity
                             sets[current_set][56:33] == proc_addr[31:8]    // Correct Tag
                         ) begin
                             next_bs_req_type = BackingStoreWrite;
