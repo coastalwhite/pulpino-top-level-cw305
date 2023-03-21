@@ -52,8 +52,8 @@ module compat_cache (
     reg        next_do_write;
     reg [31:0] next_content;
     
-    reg [2:0] state;
-    reg [2:0] next_state;
+    reg [3:0] state;
+    reg [3:0] next_state;
 
     reg bs_write_enable;
     reg bs_req_do;
@@ -219,9 +219,9 @@ module compat_cache (
 
 				for (bi = 0; bi < 4; bi = bi + 1) begin
 					if (proc_be[i])
-						next_content[(bi+1)*8-1:bi*8] = proc_data[(bi+1)*8-1:bi*8];
+						next_content[(bi+1)*8-1 -: 8] = proc_data[(bi+1)*8-1 -: 8];
 					else
-						next_content[(bi+1)*8-1:bi*8] = sets[current_set][(bi+1)*8-1:bi*8];
+						next_content[(bi+1)*8-1 -: 8] = sets[current_set][(bi+1)*8-1 -: 8];
 				end
 
                 next_state = WriteMemReq;
