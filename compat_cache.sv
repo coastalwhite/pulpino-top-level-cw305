@@ -221,7 +221,7 @@ module compat_cache (
 				next_do_write = 1'b1;
 
 				for (bi = 0; bi < 4; bi = bi + 1) begin
-					if (proc_be[i])
+					if (proc_be[bi])
 						next_content[(bi+1)*8-1 -: 8] = proc_data[(bi+1)*8-1 -: 8];
 					else
 						next_content[(bi+1)*8-1 -: 8] = sets[current_set][(bi+1)*8-1 -: 8];
