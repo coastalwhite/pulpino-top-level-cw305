@@ -79,7 +79,7 @@ module compat_cache (
         CacheLineInvalid    = 1'b0;
 
     assign core_rdata_o   = sets[current_set][31:0];
-    assign core_gnt_o     = 1'b1;
+    assign core_gnt_o     = state == FindSet;
     assign core_rvalid_o  = state == Done;
     // NOTE: In the pulpino core this is just set to zero.
     assign core_error_o   = 1'b0;
@@ -206,16 +206,20 @@ module compat_cache (
 				next_bs_write_enable = 1'b0;
 				next_bs_wdata        = 32'b0;
 
-				next_state = ReadMemWait;
+                if (mem_gnt_i) begin
+                    next_state = ReadMemWait;
+                end
 			end
 			ReadMemWait: begin
-				next_content  = mem_rdata_i;
-				next_do_write = 1'b1;
+                if (mem_rvalid_i) begin
+                    next_content  = mem_rdata_i;
+                    next_do_write = 1'b1;
 
-				if (~proc_write_enable)
-					next_state = Done;
-				else
-					next_state = WriteCache;
+                    if (~proc_write_enable)
+                        next_state = Done;
+                    else
+                        next_state = WriteCache;
+                end
 			end
             WriteCache: begin
 				next_do_write = 1'b1;
@@ -234,10 +238,14 @@ module compat_cache (
 				next_bs_write_enable = 1'b1;
 				next_bs_wdata        = sets[current_set][31:0];
 
-				next_state = WriteMemWait;
+                if (mem_rvalid_i) begin
+                    next_state = WriteMemWait;
+                end
 			end
 			WriteMemWait: begin
-				next_state = Done;
+                if (mem_rvalid_i) begin
+                    next_state = Done;
+                end
 			end
             Done: begin
                 next_state = NoRequest;
