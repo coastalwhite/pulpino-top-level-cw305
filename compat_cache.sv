@@ -250,7 +250,16 @@ module compat_cache (
                 end
 			end
             Done: begin
-                next_state = NoRequest;
+                if (core_req_i) begin
+                    next_proc_data = core_wdata_i;
+                    next_proc_write_enable = core_we_i;
+                    next_proc_be = core_be_i;
+                    next_proc_addr = core_addr_i;
+
+                    next_state = FindSet;
+                end
+                else
+                    next_state = NoRequest;
             end
         endcase
     end
