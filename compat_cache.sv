@@ -34,7 +34,7 @@ module compat_cache (
     // 32 bits = content
     // -------+
     // 57 bits
-    reg [(24 + 1 + 31):0] sets [63:0];
+    reg [63:0] sets [63:0];
 
     reg [6:0] current_set;
     reg [6:0] next_set;
@@ -108,7 +108,8 @@ module compat_cache (
             bs_wdata <= 32'b0;
 
             for (i = 0; i < 64; i = i + 1) begin
-                sets[i][56:0] <= {
+                sets[i] <= {
+                    7'b0,             // Padding
 					24'b0,            // Tag
 					CacheLineInvalid, // Validity 
 					32'b0             // Content
@@ -131,6 +132,7 @@ module compat_cache (
             
 			if (next_do_write)
 				sets[current_set] <= {
+                    7'b0,            // Padding
 					proc_addr[31:8], // Tag
 					CacheLineValid,  // Validity
 					next_content     // Content
@@ -229,7 +231,7 @@ module compat_cache (
 			WriteMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
-				next_bs_wdata        = sets[current_set];
+				next_bs_wdata        = sets[current_set][31:0];
 
 				next_state = WriteMemWait;
 			end
