@@ -143,9 +143,11 @@ module compat_cache (
     always @ (
         state,
         current_set,
-        core_addr_i, core_wdata_i, core_we_i, core_req_i,
-        mem_rvalid_i,
-        proc_write_enable, proc_data, proc_addr, proc_be
+        core_addr_i, core_wdata_i, core_we_i, core_be_i, core_req_i,
+        mem_rvalid_i, mem_gnt_i, mem_rdata_i,
+        proc_write_enable, proc_data, proc_addr, proc_be,
+        bs_wdata, bs_write_enable,
+        sets
      ) begin
         next_state         = state;
 
