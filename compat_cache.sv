@@ -75,8 +75,8 @@ module compat_cache (
         Done                = 4'b1000;
 
     localparam
-        CacheLineValid      = 1'b0,
-        CacheLineInvalid   = 1'b1;
+        CacheLineValid      = 1'b1,
+        CacheLineInvalid    = 1'b0;
 
     assign core_rdata_o   = sets[current_set][31:0];
     assign core_gnt_o     = 1'b1;
