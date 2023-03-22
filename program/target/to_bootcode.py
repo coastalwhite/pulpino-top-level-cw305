@@ -89,5 +89,8 @@ while len(LINES) < BOOTCODE_SIZE:
     else:
         LINES.append(NOP)
 
+# Remove trailing comma
+LINES[-1] = LINES[-1].replace(',', ' ', 1)
+
 for line in LINES:
     file_out_memfile.writelines(line)
