@@ -1,7 +1,9 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-module set_associative_cache (
+module set_associative_cache #(
+    parameter ASSOCIATIVE_WAY = 2
+) (
     input wire         clk,
     input wire         reset,
 
@@ -34,10 +36,13 @@ module set_associative_cache (
     // 32 bits = content
     // -------+
     // 57 bits
-    reg [63:0] sets [63:0];
+    reg [63:0] sets [63:0][ASSOCIATIVE_WAY-1:0];
 
     reg [6:0] current_set;
+    reg [ASSOCIATIVE_WAY-1:0] current_block;
+
     reg [6:0] next_set;
+    reg [ASSOCIATIVE_WAY-1:0] next_block;
 
     reg [31:0] proc_data;
     reg        proc_write_enable;
@@ -78,7 +83,7 @@ module set_associative_cache (
         CacheLineValid      = 1'b1,
         CacheLineInvalid    = 1'b0;
 
-    assign core_rdata_o   = sets[current_set][31:0];
+    assign core_rdata_o   = sets[current_set][current_block][31:0];
     assign core_gnt_o     = state == FindSet;
     assign core_rvalid_o  = state == Done;
     // NOTE: In the pulpino core this is just set to zero.
@@ -91,12 +96,13 @@ module set_associative_cache (
     assign mem_req_o      = bs_req_do;
     assign mem_be_o       = 4'b1111;
 
-    integer i, bi, top_bit, bot_bit;
+    integer i, j, bi, top_bit, bot_bit;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
             state       <= NoRequest;
 
-            current_set <= 6'b0;
+            current_set   <= 6'b0;
+            current_block <=  'b0;
 
             proc_data         <= 32'b0;
             proc_write_enable <= 1'b0;
@@ -108,18 +114,21 @@ module set_associative_cache (
             bs_wdata <= 32'b0;
 
             for (i = 0; i < 64; i = i + 1) begin
-                sets[i] <= {
-                    7'b0,             // Padding
-					24'b0,            // Tag
-					CacheLineInvalid, // Validity 
-					32'b0             // Content
-				};
+                for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
+                    sets[i][j] <= {
+                        7'b0,             // Padding
+                        24'b0,            // Tag
+                        CacheLineInvalid, // Validity 
+                        32'b0             // Content
+                    };
+                end
             end
         end
         else begin
             state       <= next_state;
 
-            current_set <= next_set;
+            current_set   <= next_set;
+            current_block <= next_block;
 
             proc_data         <= next_proc_data;
             proc_write_enable <= next_proc_write_enable;
@@ -131,7 +140,7 @@ module set_associative_cache (
             bs_wdata <= next_bs_wdata;
             
 			if (next_do_write)
-				sets[current_set] <= {
+				sets[current_set][current_block] <= {
                     7'b0,            // Padding
 					proc_addr[31:8], // Tag
 					CacheLineValid,  // Validity
@@ -152,6 +161,7 @@ module set_associative_cache (
         next_state         = state;
 
         next_set           = current_set;
+        next_block         = current_block;
 
         next_proc_data         = proc_data;
         next_proc_addr         = proc_addr;
@@ -168,6 +178,7 @@ module set_associative_cache (
         case (state)
             NoRequest: begin
                 next_set       = 6'b0;
+                next_block  =  'b0;
 
                 next_proc_data         = 32'b0;
                 next_proc_write_enable = 1'b0; // CacheRead is just the default type
@@ -189,9 +200,11 @@ module set_associative_cache (
             end
             FindBlock: begin
 				if (
-					sets[current_set][32] == CacheLineValid &&     // Validity
-					sets[current_set][56:33] == proc_addr[31:8]    // Correct Tag
+					sets[current_set][0][32] == CacheLineValid &&     // Validity
+					sets[current_set][0][56:33] == proc_addr[31:8]    // Correct Tag
 				) begin
+                    next_block = 0;
+
 					// Cache hit
 					if (~proc_write_enable)
                         next_state = Done;
@@ -230,7 +243,7 @@ module set_associative_cache (
 					if (proc_be[bi])
 						next_content[(bi+1)*8-1 -: 8] = proc_data[(bi+1)*8-1 -: 8];
 					else
-						next_content[(bi+1)*8-1 -: 8] = sets[current_set][(bi+1)*8-1 -: 8];
+						next_content[(bi+1)*8-1 -: 8] = sets[current_set][current_block][(bi+1)*8-1 -: 8];
 				end
 
                 next_state = WriteMemReq;
@@ -238,7 +251,7 @@ module set_associative_cache (
 			WriteMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
-				next_bs_wdata        = sets[current_set][31:0];
+				next_bs_wdata        = sets[current_set][current_block][31:0];
 
                 if (mem_rvalid_i) begin
                     next_state = WriteMemWait;
