@@ -104,8 +104,11 @@ else
     echo "Compiling C Directory..."
     mkdir -p target
     BIN_PATH="target/$(basename $PROG_DIR)"
-    CFILES=$(cat gcc_files)
-    $RISCV_GCC -fdata-sections -ffunction-sections $C_FILES -o "$BIN_PATH" -Wl,--gc-sections 
+    CFILES="../ext_io/start.c ../ext_io/pulpino_comm.c"
+    CFILES+=" $(echo ./*.c)"
+    CFILES=($CFILES)
+
+	$RISCV_GCC -nostdlib -fdata-sections -ffunction-sections ${CFILES[@]} -o "$BIN_PATH" -Wl,--gc-sections -Wl,-Tvirt.lds
 fi
 
 echo "Dumping binary file..."
