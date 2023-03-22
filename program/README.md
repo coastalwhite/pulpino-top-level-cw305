@@ -1,15 +1,15 @@
 # Programming the Pulpino on CW305
 
-This readme contains all the information needed to program the PULPINO core on
-the CW305 given the source files in this repository. This readme assumes that
+This README contains all the information needed to program the PULPINO core on
+the CW305 given the source files in this repository. This README assumes that
 you have a ready synthesized project according to [the setup guide in this
-repository](../setup/README.md). First, this readme gives a small overview of
+repository](../setup/README.md). First, this README gives a small overview of
 the memory system and the solutions to program each of them. Then, all the
 specifics a given to program each of them.
 
 ## Overview
 
-The Pulpino contains 3 main memories:
+The PULPINO contains 3 main memories:
 
 1. Bootcode ROM
 2. Instruction RAM
@@ -23,28 +23,29 @@ are given in [Programming the RAM](#programming-the-ram).
 
 There exist two prepared implementation on how to program the PULPINO, with Rust
 and with C. Both provide an example blinky led program for the RAM called
-`blinky_ram`. You can adapt your program from there. Both, use a small library
-of functions that allow for IO with th
+`blinky_ram`. You can adapt your program from there.
+
+The C and Rust implementations use small libraries called `ext_io` that allow
+for IO with the python interface. The communication protocol is documented
+[here](../docs/usb-communication.md). The
+[ext/connection.py](./ext/connection.py) file provides the python side of that
+interface and can be used to start program and start the board.
 
 ## Programming the Bootcode
 
 In the current setup the bootcode is used to program the RAM and jump to the
 proper entry address. The source code for this bootcode can be found in the
-`/program/target/rust/program_rom`. A precompiled version can be found
-`/program/target/out/mem_bootcode.v`. This contains the verilog array that can
+`/program/target/rust/bootcode`. A precompiled version can be found
+`/program/target/out/bootcode_program`. This contains the Verilog array that can
 be pasted into the `./rtl/bootcode.sv` source file in your PULPINO project.
 
+To compile it yourself.
+
 ```bash
-# Build the bootcode
-cd rust/bootcode
-cargo build --release
+cd target
+./compile.sh rust/bootcode --out=verilog
 
-# Turn the binary into a objdump
-riscv32-elf-objdump -d target/riscv32i-unknown-none-elf/release/bootcode > ../../dumps/bootcode.dump
-cd ../..
-
-# Turn the objdump into a verilog array
-./to_boot_code dumps/bootcode.dump out/bootcode.v
+# Copy `out/bootcode` array into `rtl/bootcode.sv`
 ```
 
 ## Programming the RAM
