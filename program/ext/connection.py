@@ -8,6 +8,7 @@ FPGA_REGS = dict(
     REG_PULPINO_EXT_DATA   = 0x01,
     REG_EXT_PULPINO_FLAGS  = 0x02,
     REG_PULPINO_EXT_FLAGS  = 0x03,
+    REG_RESET              = 0x04,
 )
 
 def word_to_byte_array(word):
@@ -181,6 +182,9 @@ class PulpinoConnection():
         # TODO: Remove
         self.receive_word()
         self.receive_word()
+
+    def reset(self):
+        self.ftarget.fpga_write(FPGA_REGS['REG_RESET'], bytearray([1]))
 
     def get_raw(self):
         return self.ftarget

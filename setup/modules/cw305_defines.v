@@ -38,5 +38,5 @@ either expressed or implied, of NewAE Technology Inc.
 `define REG_PULPINO_EXT_DATA            'h01
 `define REG_EXT_PULPINO_FLAGS           'h02
 `define REG_PULPINO_EXT_FLAGS           'h03
-
+`define REG_RESET                       'h04
 

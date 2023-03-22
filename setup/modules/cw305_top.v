@@ -74,9 +74,12 @@ module cw305_top #(
     wire [7:0] read_data;
     wire reg_read;
     wire reg_write;
-    wire pulpino_clk;    
+    wire pulpino_clk;
+    
+    // Reset Signal coming in over USB
+    wire usb_reset_reg;
 
-    wire resetn = pushbutton;
+    wire resetn = pushbutton & ~usb_reset_reg;
     wire reset = !resetn;
 
 	wire [7:0] pulpino_data;
@@ -141,7 +144,8 @@ module cw305_top #(
 	   .I_pulpino_flags	        (pulpino_flags),
 
 	   .O_ext_data		        (ext_data),
-	   .O_ext_flags	            (ext_flags)
+	   .O_ext_flags	            (ext_flags),
+	   .O_reset                 (usb_reset_reg)
     );
 
     assign usb_data = isout? usb_dout : 8'bZ;

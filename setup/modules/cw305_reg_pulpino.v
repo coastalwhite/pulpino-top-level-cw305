@@ -60,7 +60,8 @@ module cw305_reg_pulpino #(
 
    // register outputs:
    output reg  [7:0]                  			O_ext_data,
-   output reg  [7:0]                  			O_ext_flags
+   output reg  [7:0]                  			O_ext_flags,
+   output reg                        			O_reset
 
 );
 
@@ -77,6 +78,7 @@ module cw305_reg_pulpino #(
             `REG_PULPINO_EXT_DATA:      reg_read_data = I_pulpino_data;
             `REG_PULPINO_EXT_FLAGS:     reg_read_data = I_pulpino_flags;
             `REG_EXT_PULPINO_FLAGS:     reg_read_data = O_ext_flags;
+            `REG_RESET:                 reg_read_data = O_reset;
             default:                    reg_read_data = 0;
          endcase
       end
@@ -88,6 +90,12 @@ module cw305_reg_pulpino #(
    // cycle earlier, simply remove this stage:
    always @(posedge usb_clk)
       read_data <= reg_read_data;
+   
+   reg usb_reset;
+   
+   always @ (posedge crypto_clk) begin
+       O_reset <= usb_reset != 1'b00;
+   end
 
    //////////////////////////////////
    // write logic (USB clock domain):
@@ -96,6 +104,7 @@ module cw305_reg_pulpino #(
       if (reset_i) begin
 		 O_ext_data  <= 8'b0;
 		 O_ext_flags <= 8'b0;
+		 usb_reset   <= 1'b0;
       end
 
       else begin
@@ -103,6 +112,7 @@ module cw305_reg_pulpino #(
             case (reg_address)
 			   `REG_EXT_PULPINO_DATA:   O_ext_data  <= write_data;
 			   `REG_EXT_PULPINO_FLAGS:  O_ext_flags <= write_data;
+			   `REG_RESET:              usb_reset   <= 1'b1;
             endcase
          end
       end
