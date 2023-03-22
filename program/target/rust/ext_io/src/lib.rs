@@ -65,9 +65,6 @@ pub fn program() -> bool {
     let mut start = read_word();
     let end       = read_word();
 
-    write_word(start);
-    write_word(end);
-
     if start == end {
         return false;
     }

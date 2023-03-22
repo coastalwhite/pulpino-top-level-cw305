@@ -20,7 +20,7 @@ _start:
 
 #[no_mangle]
 fn main() {
-    while ext_io::MemoryRange::program() {}
+    while ext_io::program() {}
 
     let entry = ext_io::read_word();
 

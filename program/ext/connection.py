@@ -11,24 +11,6 @@ FPGA_REGS = dict(
     REG_RESET              = 0x04,
 )
 
-def word_to_byte_array(word):
-    arr = []
-
-    for _ in range(4):
-        arr.append(word & 0xFF)
-        word >>= 8
-
-    return bytearray(arr)
-
-def byte_array_to_word(barr):
-    word = 0
-
-    for b in barr[::-1]:
-        word <<= 8
-        word |= b
-
-    return word
-
 class PulpinoConnection():
     _ext_read_flicker = False
     _ext_write_flicker = False
@@ -165,10 +147,6 @@ class PulpinoConnection():
         self.send_word(start)
         self.send_word(end)
 
-        # TODO: Remove
-        self.receive_word()
-        self.receive_word()
-
         for i, b in enumerate(ram_memory):
             print("Programming... {}/{}".format(i + 1, len(ram_memory)), end='\r')
             self.send_byte(b)
@@ -178,10 +156,6 @@ class PulpinoConnection():
     def stop_programming(self):
         self.send_word(0x0)
         self.send_word(0x0)
-
-        # TODO: Remove
-        self.receive_word()
-        self.receive_word()
 
     def reset(self):
         self.ftarget.fpga_write(FPGA_REGS['REG_RESET'], bytearray([1]))
