@@ -56,18 +56,18 @@ def objdump_line_to_hex(line):
     return (hex, asm)
 
 LINES = []
-HAS_SEEN_MAIN = False
+HAS_SEEN_ENTRY = False
 for line in file_in_content:
     output = to_addr(line)
     
     if output != None:
         addr, label = output
         #file_out_memfile.writelines('@' + addr + ' // ' + label + '\n')
-        if '<{}>'.format(ENTRY_FUNCTION) in label:
-            HAS_SEEN_MAIN = True
+        if '<{}>:'.format(ENTRY_FUNCTION) in label:
+            HAS_SEEN_ENTRY = True
         continue
 
-    if not HAS_SEEN_MAIN:
+    if not HAS_SEEN_ENTRY:
         continue
 
     output = objdump_line_to_hex(line)
