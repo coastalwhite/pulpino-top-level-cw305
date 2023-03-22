@@ -79,9 +79,11 @@ terminal. Lastly, there are the steps to follow in [Vivado][vivado].
    click and select `Set as top`.
 6. In the `Sources` tab under `Constraints`, navigate to `cw305_main`, right
    click and select `Set as Target Constraint File`.
-7. Run Synthesis.
-8. Run Implementation.
-9. Generate the Bitstream.
+7. Open the `./rtl/bootcode.sv` and replace the content of the `mem` array with
+   the content of [`bootcode_program`](../program/target/out/bootcode_program).
+8. Run Synthesis.
+9. Run Implementation.
+10. Generate the Bitstream.
 
 ## Making Changes
 
