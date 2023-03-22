@@ -108,7 +108,7 @@ else
     CFILES+=" $(echo ./*.c)"
     CFILES=($CFILES)
 
-	$RISCV_GCC -nostdlib -fdata-sections -ffunction-sections ${CFILES[@]} -o "$BIN_PATH" -Wl,--gc-sections -Wl,-Tvirt.lds
+	$RISCV_GCC -nostdlib -fdata-sections -ffunction-sections ${CFILES[@]} -o "$BIN_PATH" -Wl,--gc-sections -Wl,-T../../Linkerscript-RAM.lds
 fi
 
 echo "Dumping binary file..."
