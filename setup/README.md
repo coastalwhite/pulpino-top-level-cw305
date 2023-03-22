@@ -109,7 +109,7 @@ with `source ./build_env.sh`.
 
 These steps were formed by the joined work of:
 - Yiheng CAO ([@cyhopensource](https://github.com/cyhopensource))
-- Roua BOULIFA ([@roua987](https://github.com/roua987)
+- Roua BOULIFA ([@roua987](https://github.com/roua987))
 - Gijs BURGHOORN ([@coastalwhite](https://github.com/coastalwhite))
 
 [cw305]: https://www.newae.com/products/NAE-CW305
