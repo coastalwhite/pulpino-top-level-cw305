@@ -3,6 +3,7 @@
 import sys
 
 ENTRY_FUNCTION='_start'
+BOOTCODE_SIZE=547
 
 if len(sys.argv) < 3:
     print("Usage: {} <Bin code File> <Memory file>".format(sys.argv[0]))
@@ -15,6 +16,10 @@ file_in_obj  = open(BIN_CODE, "r")
 file_out_memfile = open(MEM_FILE, "w+")
 
 file_in_content = file_in_obj.readlines()
+
+# https://stackoverflow.com/a/14981125
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 def to_addr(line):
     ALLOWED="0123456789abcdefABCDEF"
@@ -69,10 +74,15 @@ for line in file_in_content:
 
     if output != None:
         hex, asm = output
+        if len(LINES) == BOOTCODE_SIZE:
+            eprint("Code too large for bootcode")
+            exit(1)
+            
         LINES.append('\t32\'h' + hex + ', // \t' + asm + '\n')
         continue
 
-while len(LINES) < 547:
+# Alternate NOPs before and after to fill buffer
+while len(LINES) < BOOTCODE_SIZE:
     NOP = '\t32\'h00000013, // nop\n'
     if len(LINES) % 2 == 0:
         LINES.insert(0, NOP)
