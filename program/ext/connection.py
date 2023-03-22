@@ -147,7 +147,6 @@ class PulpinoConnection():
         ]
 
         for b in bs:
-            print("Sent byte: {}".format(b))
             self.send_byte(b)
 
     def receive_word(self):
@@ -161,19 +160,27 @@ class PulpinoConnection():
     def program(self, start, ram_memory):
         end = (start + len(ram_memory)) % pow(2, 32)
 
-        print(end)
-        print("Start Program")
+        print("Starting to program...")
         self.send_word(start)
-        print("Sent start")
         self.send_word(end)
-        print("Sent end")
 
-        print("start: 0x{:x} -> 0x{:x}".format(start, self.receive_word()))
-        print("end:   0x{:x} -> 0x{:x}".format(end, self.receive_word()))
+        # TODO: Remove
+        self.receive_word()
+        self.receive_word()
 
         for i, b in enumerate(ram_memory):
-            print("{}: Sent Byte {}".format(i, b))
+            print("Programming... {}/{}".format(i + 1, len(ram_memory)), end='\r')
             self.send_byte(b)
+
+        print("\nProgramming done.")
+
+    def stop_programming(self):
+        self.send_word(0x0)
+        self.send_word(0x0)
+
+        # TODO: Remove
+        self.receive_word()
+        self.receive_word()
 
     def get_raw(self):
         return self.ftarget

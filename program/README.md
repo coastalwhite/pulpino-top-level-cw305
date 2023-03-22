@@ -50,14 +50,44 @@ cd target
 
 ## Programming the RAM
 
+The RAM is programmed using the USB interface. The python communication layer
+for this is defined in the [ext/connection.py](./ext/connection.py). This
+expects an array of bytes in Little-Endian per word. The `target/compile.sh`
+script can generate this array for you. Below, is an example for the
+`rust/blinky_led`.
+
 ```bash
-# Build the bootcode
-cd rust/blinky_led
-cargo build --release
+cd target
+./compile.sh rust/blinky_led
 
-# Turn the binary into a objdump
-riscv32-elf-objdump -d target/riscv32i-unknown-none-elf/release/blinky_led > ../../dumps/blinky_led.dump
+# Copy `out/blinky_led` array into your python file
+```
 
-# Turn the objdump into a verilog array
-./to_ram dumps/blinky_led.dump out/blinky_led_mem.py
+Within Python you can then run the following to program it.
+
+```python
+from connection import PulpinoConnection
+
+RAM = [
+	# ...
+]
+
+# TODO: add your bitstream
+bitpath = "path/to/bitstream.bit"
+pulpino = PulpinoConnection(bitpath, force = True)
+
+if not pulpino.get_raw().fpga.isFPGAProgrammed():
+    print("ERR: FPGA failed to program")
+    exit(1)
+
+# Program the RAM address at an offset of 0x0
+pulpino.program(0x0, RAM)
+
+# Stop Programming
+pulpino.stop_programming()
+
+# Entry Address
+pulpino.send_word(0x0)
+
+# Now the PULPINO is running
 ```
