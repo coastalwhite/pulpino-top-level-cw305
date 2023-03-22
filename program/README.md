@@ -54,11 +54,12 @@ The RAM is programmed using the USB interface. The python communication layer
 for this is defined in the [ext/connection.py](./ext/connection.py). This
 expects an array of bytes in Little-Endian per word. The `target/compile.sh`
 script can generate this array for you. Below, is an example for the
-`rust/blinky_led`.
+`blinky_led` example.
 
 ```bash
 cd target
 ./compile.sh rust/blinky_led
+# ./compile.sh c/blinky_led
 
 # Copy `out/blinky_led` array into your python file
 ```
@@ -93,4 +94,19 @@ pulpino.stop_programming()
 pulpino.send_word(0x0)
 
 # Now the PULPINO is running
+```
+
+## Creating a new application
+
+To create a new application using C or Rust. Just copy the respective
+`blinky_led` to the respective `c` or `rust` folder and make your changes. For
+Rust, remember to update the `Cargo.toml` to match the folder name.
+
+Now, you can compile your new folder with the `compile.sh` script by running.
+
+```bash
+cd program/target
+./compile.sh c/your_new_folder
+# OR
+./compile.sh rust/your_new_folder
 ```
