@@ -189,12 +189,7 @@ module cw305_top #(
     assign pulpino_read_flicker  = gpio_out[8];
     assign pulpino_data          = gpio_out[7:0];
     
-    assign led3 = (
-        ( k15_sel &  l14_sel & pulpino_read_flicker)  |
-        ( k15_sel & ~l14_sel & pulpino_write_flicker) |
-        (~k15_sel &  l14_sel & ext_read_flicker)          |
-        (~k15_sel & ~l14_sel & ext_write_flicker)
-    );
+    assign led3 = gpio_out[10];
 
 //	dummy_pulpino U_proc (
 	 pulpino U_proc (
