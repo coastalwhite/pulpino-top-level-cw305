@@ -1,11 +1,12 @@
 # Pulpino Top-Level CW305
 
 A set of instructions, files and utilities to use the [PULPINO][pulpino] Risc-V
-on a [ChipWhisperer 305][cw305] FPGA. This repository contains 3 main sections:
+on a [ChipWhisperer 305][cw305] FPGA. This repository contains 4 main sections:
 
 1. [Setup Instructions](setup/README.md)
 2. [Programming Instructions](program/README.md)
-3. [Modifications & Documentation](mods-and-docs/README.md)
+3. [Modifications](modifications/README.md)
+4. [Documentation](docs/README.md)
 
 ## Contributions
 
