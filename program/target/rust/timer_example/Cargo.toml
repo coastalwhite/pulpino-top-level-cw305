@@ -1,0 +1,8 @@
+[package]
+name = "timer_example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.ext_io]
+path = "../ext_io"
+
