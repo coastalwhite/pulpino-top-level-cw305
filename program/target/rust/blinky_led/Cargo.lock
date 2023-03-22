@@ -3,12 +3,12 @@
 version = 3
 
 [[package]]
-name = "ext_io"
-version = "0.1.0"
-
-[[package]]
-name = "program_ram"
+name = "blinky_led"
 version = "0.1.0"
 dependencies = [
  "ext_io",
 ]
+
+[[package]]
+name = "ext_io"
+version = "0.1.0"
