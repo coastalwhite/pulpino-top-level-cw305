@@ -40,6 +40,11 @@ OUT_NAME="$(basename "$PROG_DIR")"
 OUT_DIR="./out"
 DO_XCLIP=0
 
+if [[ $PROG_DIR == "--help" ]]; then
+	usage
+	exit 0
+fi
+
 IS_FIRST_ARG=0
 for arg in "$@";
 do
