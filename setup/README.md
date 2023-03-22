@@ -65,8 +65,8 @@ terminal. Lastly, there are the steps to follow in [Vivado][vivado].
    Sources...`.
    1. Select `Add or create design sources` and click next.
    2. Click `Add files`, navigate to this repository, and select the `clocks.v`,
-      `cw305_defines.v`, `cw305_top.v`, `cw305_reg_pulpino`,
-      `cw305_usb_reg_fe.v` and `usb_pulpino_channel.v` files from the
+      `cw305_defines.v`, `cw305_top.v`, `cw305_reg_pulpino` and
+      `cw305_usb_reg_fe.v` files from the
       [`modules`](./modules) folder in this repository.
    3. Select `Copy sources into project` and click `Finish`.
 4. Now, right click on the `Design Sources` in the `Sources` tab and click `Add
