@@ -80,6 +80,9 @@ if not pulpino.get_raw().fpga.isFPGAProgrammed():
     print("ERR: FPGA failed to program")
     exit(1)
 
+# Reset the PULPINO
+pulpino.reset()
+
 # Program the RAM address at an offset of 0x0
 pulpino.program(0x0, RAM)
 
