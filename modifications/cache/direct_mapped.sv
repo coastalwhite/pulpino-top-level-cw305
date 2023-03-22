@@ -1,7 +1,7 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-module compat_cache (
+module direct_mapped_cache (
     input wire         clk,
     input wire         reset,
 

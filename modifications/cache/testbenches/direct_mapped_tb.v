@@ -1,4 +1,4 @@
-module compat_cache_tb();
+module direct_mapped_tb();
   wire testmode_i = 1'b0;
 
   wire        data_mem_en;
@@ -85,7 +85,7 @@ module compat_cache_tb();
     .ram_wdata_o    ( data_mem_wdata   )
   );
 
-  compat_cache data_mem_cache (
+  direct_mapped_cache data_mem_cache (
     .clk(clk),
     .reset(~rst_n),
 

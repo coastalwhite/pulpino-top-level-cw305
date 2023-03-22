@@ -13,5 +13,5 @@ REPO=path/to/this/repo
 patch $PULPINO/rtl/core_region < $REPO/modifications/cache/core_region.sv.diff
 ```
 
-Second, you need to add the `modifications/cache/cache_compat.sv` to the source
+Second, you need to add the `modifications/cache/direct_mapped.sv` to the source
 files of the Vivado project's design sources.
