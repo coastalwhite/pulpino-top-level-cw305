@@ -144,8 +144,57 @@ module set_associative_tb();
       core_data_wdata <= 32'h0000_0000;
       core_data_be <= 4'b0;
 
+      // Cache Hit
       #100
       core_data_addr <= 32'h0010_0000;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #30
+      core_data_addr <= 32'h0010_0200;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Hit
+      #70
+      core_data_addr <= 32'h0010_0200;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Hit
+      #30
+      core_data_addr <= 32'h0010_0000;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #30
+      core_data_addr <= 32'h0010_0300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0000;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0300;
       core_data_req <= 1'b1;
 
       #10
