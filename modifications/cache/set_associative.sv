@@ -211,6 +211,11 @@ module set_associative_cache #(
                 next_state = FindBlock;
             end
             FindBlock: begin
+				// FindBlock has 3 steps. If at any of these steps it finds
+				// a suitable block it will move on.
+				// 1. See if the `tag` is already in the cache
+				// 2. See if there is an empty block
+				// 3. Find the next FIFO determined block
                 for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
                     if (
                         sets[current_set][j][32] == CacheLineValid &&     // Validity
