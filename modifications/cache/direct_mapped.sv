@@ -172,6 +172,7 @@ module direct_mapped_cache (
                 next_proc_data         = 32'b0;
                 next_proc_write_enable = 1'b0; // CacheRead is just the default type
                 next_proc_addr         = 32'b0;
+                next_proc_be           = 4'b0;
 
                 if (core_req_i) begin
                     next_proc_data = core_wdata_i;
