@@ -45,6 +45,9 @@ module set_associative_cache #(
     reg [6:0] next_set;
     reg [ASSOCIATIVE_WAY-1:0] next_block;
 
+    reg [ASSOCIATIVE_WAY-1:0] block_det_outs [2];
+    reg block_det_valid [2];
+
     reg [31:0] proc_data;
     reg        proc_write_enable;
 	reg [3:0]  proc_be;
@@ -185,6 +188,11 @@ module set_associative_cache #(
         fifo_do_increase   =  1'b0;
         next_do_write      =  1'b0;
         next_content       = 32'b0;
+
+        for (i = 0; i < 2; i = i + 1) begin
+            block_det_outs[i] <= 'b0;
+            block_det_valid[i] <= 0;
+        end
         
         case (state)
             NoRequest: begin
@@ -221,7 +229,8 @@ module set_associative_cache #(
                         sets[current_set][j][32] == CacheLineValid &&     // Validity
                         sets[current_set][j][56:33] == proc_addr[31:8]    // Correct Tag
                     ) begin
-                        next_block = j;
+                        block_det_outs[0] = j;
+                        block_det_valid[0] = 1;
 
                         // Cache hit
                         if (~proc_write_enable)
@@ -233,26 +242,42 @@ module set_associative_cache #(
                     end
                 end
                 
-                if (next_state == FindBlock) begin
-                    for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
-                        if (
-                            sets[current_set][j][32] == CacheLineInvalid // Validity
-                        ) begin
-                            next_block = j;
-                            next_state = ReadMemReq;
-                            
-                            break;
-                        end
-                    end
+                for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
+                    if (
+                        sets[current_set][j][32] == CacheLineInvalid // Validity
+                    ) begin
+                        block_det_outs[1] = j;
+                        block_det_valid[1] = 1;
 
-                    if (next_state == FindBlock) begin
-                        next_block = fifo_counters[current_set];
-                        fifo_do_increase = 1'b1;
-
-                        // Cache Miss
-                        next_state = ReadMemReq;
+                        break;
                     end
                 end
+
+                if (block_det_valid[0]) begin
+                    // Cache Hit
+                    next_block = block_det_outs[0];
+
+                    // Cache hit
+                    if (~proc_write_enable)
+                        next_state = Done;
+                    else
+                        next_state = WriteCache;
+                end
+                else if (block_det_valid[1]) begin
+                    // Cache Miss - With Empty Block
+                    next_block = block_det_outs[1];
+
+                    next_state = ReadMemReq;
+                end
+                else begin
+                    // Cache Miss - Without Empty Block
+                    next_block = fifo_counters[current_set];
+                    fifo_do_increase = 1'b1;
+
+                    next_state = ReadMemReq;
+                end
+                        
+
             end
 			ReadMemReq: begin
 				next_bs_req_do       = 1'b1;
