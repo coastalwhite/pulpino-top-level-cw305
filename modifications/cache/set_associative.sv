@@ -37,6 +37,7 @@ module set_associative_cache #(
     // -------+
     // 57 bits
     reg [63:0] sets [63:0][ASSOCIATIVE_WAY-1:0];
+    reg [$clog2(ASSOCIATIVE_WAY)-1:0] fifo_counters [63:0];
 
     reg [6:0] current_set;
     reg [ASSOCIATIVE_WAY-1:0] current_block;
@@ -54,6 +55,7 @@ module set_associative_cache #(
     reg [3:0]  next_proc_be;
     reg [31:0] next_proc_addr;
     
+    reg        fifo_do_increase;
     reg        next_do_write;
     reg [31:0] next_content;
     
@@ -122,6 +124,8 @@ module set_associative_cache #(
                         32'b0             // Content
                     };
                 end
+
+                fifo_counters[i] <= 'b0;
             end
         end
         else begin
@@ -146,6 +150,12 @@ module set_associative_cache #(
 					CacheLineValid,  // Validity
 					next_content     // Content
 				};
+            if (fifo_do_increase)
+                if (fifo_counters[current_set] == ASSOCIATIVE_WAY - 1)
+                    fifo_counters[current_set] <= 'b0;
+                else
+                    fifo_counters[current_set] <= fifo_counters[current_set] + 1;
+
         end
     end
     
@@ -156,7 +166,7 @@ module set_associative_cache #(
         mem_rvalid_i, mem_gnt_i, mem_rdata_i,
         proc_write_enable, proc_data, proc_addr, proc_be,
         bs_wdata, bs_write_enable,
-        sets
+        sets, fifo_counters
      ) begin
         next_state         = state;
 
@@ -172,6 +182,7 @@ module set_associative_cache #(
         next_bs_write_enable = 1'b0;
         next_bs_wdata        = bs_wdata;
 
+        fifo_do_increase   =  1'b0;
         next_do_write      =  1'b0;
         next_content       = 32'b0;
         
@@ -199,21 +210,42 @@ module set_associative_cache #(
                 next_state = FindBlock;
             end
             FindBlock: begin
-				if (
-					sets[current_set][0][32] == CacheLineValid &&     // Validity
-					sets[current_set][0][56:33] == proc_addr[31:8]    // Correct Tag
-				) begin
-                    next_block = 0;
+                for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
+                    if (
+                        sets[current_set][j][32] == CacheLineValid &&     // Validity
+                        sets[current_set][j][56:33] == proc_addr[31:8]    // Correct Tag
+                    ) begin
+                        next_block = j;
 
-					// Cache hit
-					if (~proc_write_enable)
-                        next_state = Done;
-                    else
-                        next_state = WriteCache;
+                        // Cache hit
+                        if (~proc_write_enable)
+                            next_state = Done;
+                        else
+                            next_state = WriteCache;
+                        
+                        break;
+                    end
                 end
-                else begin
-					// Cache Miss
-					next_state = ReadMemReq;
+                
+                if (next_state == FindBlock) begin
+                    for (j = 0; j < ASSOCIATIVE_WAY; j = j + 1) begin
+                        if (
+                            sets[current_set][j][32] == CacheLineInvalid // Validity
+                        ) begin
+                            next_block = j;
+                            next_state = ReadMemReq;
+                            
+                            break;
+                        end
+                    end
+
+                    if (next_state == FindBlock) begin
+                        next_block = fifo_counters[current_set];
+                        fifo_do_increase = 1'b1;
+
+                        // Cache Miss
+                        next_state = ReadMemReq;
+                    end
                 end
             end
 			ReadMemReq: begin
