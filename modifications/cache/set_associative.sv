@@ -39,10 +39,10 @@ module set_associative_cache #(
     reg [63:0] sets [63:0][ASSOCIATIVE_WAY-1:0];
     reg [$clog2(ASSOCIATIVE_WAY)-1:0] fifo_counters [63:0];
 
-    reg [6:0] current_set;
+    reg [5:0] current_set;
     reg [ASSOCIATIVE_WAY-1:0] current_block;
 
-    reg [6:0] next_set;
+    reg [5:0] next_set;
     reg [ASSOCIATIVE_WAY-1:0] next_block;
 
     reg [ASSOCIATIVE_WAY-1:0] block_det_outs [2];
