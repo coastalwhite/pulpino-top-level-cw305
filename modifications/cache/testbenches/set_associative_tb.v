@@ -85,9 +85,7 @@ module set_associative_tb();
     .ram_wdata_o    ( data_mem_wdata   )
   );
 
-  set_associative_cache #(
-    .ASSOCIATIVE_WAY(2)
-  ) data_mem_cache (
+  set_associative_cache data_mem_cache (
     .clk(clk),
     .reset(~rst_n),
 
@@ -195,6 +193,38 @@ module set_associative_tb();
       // Cache Miss
       #70
       core_data_addr <= 32'h0010_0300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+      
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0000;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+      
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0004;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #70
+      core_data_addr <= 32'h0010_0304;
       core_data_req <= 1'b1;
 
       #10
