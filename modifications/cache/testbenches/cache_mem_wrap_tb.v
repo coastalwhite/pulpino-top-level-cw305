@@ -12,7 +12,7 @@ module cache_mem_wrap_tb();
   reg [15:0]  line_be_i;
 
   wire [1:0]   line_valid_o;
-  wire [21:0]  line_tag_o;
+  wire [22*2-1:0]  line_tag_o;
   wire [127:0] line_o;
 
   reg clk;
@@ -78,6 +78,30 @@ module cache_mem_wrap_tb();
 
       #10
       set <= 0;
+
+      #10
+      write_enable <= 1;
+      line_valid_i <= 1;
+      line_tag_i <= 'h123;
+      line_i <= 'habc;
+      set <= 1;
+
+      #10
+      line_valid_i <= 1;
+      line_tag_i <= 'h1338;
+      line_i <= 'h3333;
+      set <= 0;
+      way <= 1;
+
+      #10
+      line_valid_i <= 1;
+      line_tag_i <= 'h5656;
+      line_i <= 'h9999;
+      set <= 0;
+      way <= 1;
+
+      #10
+      write_enable <= 0;
 
       #10
       enable <= 0;
