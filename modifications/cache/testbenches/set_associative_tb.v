@@ -143,7 +143,7 @@ module set_associative_tb();
       core_data_be <= 4'b0;
 
       // Cache Hit
-      #100
+      #200
       core_data_addr <= 32'h0010_0000;
       core_data_req <= 1'b1;
 
@@ -151,7 +151,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Miss
-      #30
+      #60
       core_data_addr <= 32'h0010_0200;
       core_data_req <= 1'b1;
 
@@ -159,7 +159,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Hit
-      #70
+      #150
       core_data_addr <= 32'h0010_0200;
       core_data_req <= 1'b1;
 
@@ -167,7 +167,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Hit
-      #30
+      #60
       core_data_addr <= 32'h0010_0000;
       core_data_req <= 1'b1;
 
@@ -175,7 +175,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Miss
-      #30
+      #60
       core_data_addr <= 32'h0010_0300;
       core_data_req <= 1'b1;
 
@@ -183,7 +183,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Miss
-      #70
+      #150
       core_data_addr <= 32'h0010_0000;
       core_data_req <= 1'b1;
 
@@ -191,23 +191,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Miss
-      #70
-      core_data_addr <= 32'h0010_0300;
-      core_data_req <= 1'b1;
-
-      #10
-      core_data_req <= 1'b0;
-      
-      // Cache Miss
-      #70
-      core_data_addr <= 32'h0010_0000;
-      core_data_req <= 1'b1;
-
-      #10
-      core_data_req <= 1'b0;
-
-      // Cache Miss
-      #70
+      #150
       core_data_addr <= 32'h0010_0300;
       core_data_req <= 1'b1;
 
@@ -215,7 +199,23 @@ module set_associative_tb();
       core_data_req <= 1'b0;
       
       // Cache Miss
-      #70
+      #150
+      core_data_addr <= 32'h0010_0000;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #150
+      core_data_addr <= 32'h0010_0300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+      
+      // Cache Miss
+      #150
       core_data_addr <= 32'h0010_0004;
       core_data_req <= 1'b1;
 
@@ -223,7 +223,7 @@ module set_associative_tb();
       core_data_req <= 1'b0;
 
       // Cache Miss
-      #70
+      #150
       core_data_addr <= 32'h0010_0304;
       core_data_req <= 1'b1;
 

@@ -6,17 +6,18 @@ module set_associative_cache #(
     parameter SET_COUNT = 64,
     parameter WAY_WORD_COUNT = 4,
 
-	parameter WAY_WORD_IDX_START = 2,
-	parameter WAY_WORD_IDX_END   = WAY_WORD_IDX_START + $clog2(WAY_WORD_COUNT) - 1,
-	parameter WAY_WORD_IDX_SIZE  = WAY_WORD_IDX_END - WAY_WORD_IDX_START + 1,
+	localparam
+              WAY_WORD_IDX_START = 2,
+	          WAY_WORD_IDX_END   = WAY_WORD_IDX_START + $clog2(WAY_WORD_COUNT) - 1,
+	          WAY_WORD_IDX_SIZE  = WAY_WORD_IDX_END - WAY_WORD_IDX_START + 1,
 
-	parameter SET_IDX_START      = WAY_WORD_IDX_END + 1,
-	parameter SET_IDX_END        = SET_IDX_START + $clog2(SET_COUNT) - 1,
-	parameter SET_IDX_SIZE       = SET_IDX_END - SET_IDX_START + 1,
+	          SET_IDX_START      = WAY_WORD_IDX_END + 1,
+	          SET_IDX_END        = SET_IDX_START + $clog2(SET_COUNT) - 1,
+	          SET_IDX_SIZE       = SET_IDX_END - SET_IDX_START + 1,
 
-	parameter TAG_IDX_START      = SET_IDX_END + 1,
-	parameter TAG_IDX_END        = 31,
-	parameter TAG_IDX_SIZE       = TAG_IDX_END - TAG_IDX_START + 1
+	          TAG_IDX_START      = SET_IDX_END + 1,
+	          TAG_IDX_END        = 31,
+	          TAG_IDX_SIZE       = TAG_IDX_END - TAG_IDX_START + 1
 ) (
     input wire         clk,
     input wire         reset,
@@ -45,9 +46,41 @@ module set_associative_cache #(
     input wire         mem_rvalid_i,
     input wire         mem_error_i
 );
-	reg                    line_validity [SET_COUNT][WAY_COUNT];
-	reg [TAG_IDX_SIZE-1:0] line_tags     [SET_COUNT][WAY_COUNT];
-    reg [31:0]             lines         [SET_COUNT][WAY_COUNT][WAY_WORD_COUNT];
+    reg cache_write_enable;
+
+    reg                          cache_valid_i;
+    reg [TAG_IDX_SIZE-1:0]       cache_tag_i;
+    reg [WAY_WORD_COUNT*32-1:0]  cache_line_i;
+    reg [WAY_WORD_COUNT*4-1:0]  cache_be_i;
+
+    wire [WAY_COUNT-1:0]         cache_valid_o;
+    wire [WAY_COUNT*TAG_IDX_SIZE-1:0]      cache_tag_o;
+    wire [WAY_WORD_COUNT*32-1:0] cache_line_o;
+
+    cache_mem_wrap #(
+        .WAY_COUNT     (WAY_COUNT),
+        .SET_COUNT     (SET_COUNT),
+        .WAY_WORD_COUNT(WAY_WORD_COUNT)
+    ) U_memory (
+        .clk(clk),
+        .reset(reset),
+
+	    .set(current_set),
+	    .way(current_way),
+
+	    .enable(1'b1),
+	    .write_enable(cache_write_enable),
+	    .val_write_enable(1'b0),
+
+	    .line_valid_i(cache_valid_i),
+	    .line_tag_i(cache_tag_i),
+	    .line_i(cache_line_i),
+	    .line_be_i(cache_be_i),
+
+        .line_valid_o(cache_valid_o),
+        .line_tag_o(cache_tag_o),
+        .line_o(cache_line_o)
+    );
 
     reg [$clog2(WAY_COUNT)-1:0] fifo_counters [SET_COUNT];
 
@@ -57,8 +90,11 @@ module set_associative_cache #(
     reg [$clog2(WAY_COUNT)-1:0] current_way;
     reg [$clog2(WAY_COUNT)-1:0] next_way;
 
-    reg [$clog2(WAY_COUNT)-1:0] block_det_outs [2];
-    reg block_det_valid [2];
+    reg [$clog2(WAY_COUNT)*2-1:0] block_det_outs;
+    reg [1:0] block_det_valid;
+
+    reg [$clog2(WAY_COUNT)*2-1:0] next_block_det_outs;
+    reg [1:0] next_block_det_valid;
 
     reg [31:0] proc_data;
     reg        proc_write_enable;
@@ -83,49 +119,56 @@ module set_associative_cache #(
     reg [31:0] next_proc_addr;
     
     reg        fifo_do_increase;
-    reg        next_do_write;
-    reg [31:0] next_content [WAY_WORD_COUNT];
     
     reg [3:0] CS;
     reg [3:0] NS;
 
+    reg [31:0] bs_addr;
     reg bs_write_enable;
     reg bs_req_do;
     reg [31:0] bs_wdata;
 
+    reg [31:0] next_bs_addr;
     reg next_bs_write_enable;
     reg next_bs_req_do;
     reg [31:0] next_bs_wdata;
+
+    reg [31:0] core_rdata;
+    reg [31:0] next_core_rdata;
+
+    reg [$clog2(WAY_WORD_COUNT)-1:0] word_ctr;
+    reg word_ctr_do_increase;
     
     localparam
         NoRequest           = 4'b0000,
         FindSet             = 4'b0001,
         FindBlock           = 4'b0010,
-        ReadMemReq          = 4'b0011,
-        ReadMemWait         = 4'b0100,
-        WriteCache          = 4'b0101,
-        WriteMemReq         = 4'b0110,
-        WriteMemWait        = 4'b0111,
-        Done                = 4'b1000;
+        SelectBlock         = 4'b0011,
+        ReadMemReq          = 4'b0100,
+        ReadMemWait         = 4'b0101,
+        WriteCache          = 4'b0110,
+        WriteMemReq         = 4'b0111,
+        WriteMemWait        = 4'b1000,
+        Done                = 4'b1001;
 
     localparam
         CacheLineValid      = 1'b1,
         CacheLineInvalid    = 1'b0;
 
-    assign core_rdata_o   = lines[current_set][current_way][proc_way_word];
+    assign core_rdata_o   = core_rdata;
     assign core_gnt_o     = CS == FindSet;
     assign core_rvalid_o  = CS == Done;
     // NOTE: In the pulpino core this is just set to zero.
     assign core_error_o   = 1'b0;
 
     // Memory Side
-    assign mem_addr_o     = proc_addr;
+    assign mem_addr_o     = bs_addr;
     assign mem_wdata_o    = bs_wdata;
     assign mem_we_o       = bs_write_enable;
     assign mem_req_o      = bs_req_do;
     assign mem_be_o       = 4'b1111;
 
-    integer i, j, k, bi, top_bit, bot_bit;
+    integer i, j;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
             CS       <= NoRequest;
@@ -133,25 +176,24 @@ module set_associative_cache #(
             current_set   <= 6'b0;
             current_way <=  'b0;
 
+            block_det_outs    <=  'b0;
+            block_det_valid   <= 2'b00;
+
             proc_data         <= 32'b0;
             proc_write_enable <= 1'b0;
             proc_addr         <= 32'b0;
             proc_be           <= 4'b0;
 
+            bs_addr <= 32'b0;
             bs_req_do       <= 1'b0;
             bs_write_enable <= 1'b0;
             bs_wdata <= 32'b0;
 
+            core_rdata <= 32'b0;
+
+            word_ctr <= 32'b0;
+
             for (i = 0; i < SET_COUNT; i = i + 1) begin
-                for (j = 0; j < WAY_COUNT; j = j + 1) begin
-					for (k = 0; k < WAY_WORD_COUNT; k = k + 1) begin
-						lines[i][j][k] <= 32'b0;
-					end 
-
-					line_validity[i][j] <= 'b0;
-					line_tags[i][j] <= 'b0;
-                end
-
                 fifo_counters[i] <= 'b0;
             end
         end
@@ -161,27 +203,31 @@ module set_associative_cache #(
             current_set   <= next_set;
             current_way <= next_way;
 
+            block_det_outs    <= next_block_det_outs;
+            block_det_valid   <= next_block_det_valid;
+
             proc_data         <= next_proc_data;
             proc_write_enable <= next_proc_write_enable;
             proc_addr         <= next_proc_addr;
             proc_be           <= next_proc_be;
 
+            bs_addr <= next_bs_addr;
             bs_req_do       <= next_bs_req_do;
             bs_write_enable <= next_bs_write_enable;
             bs_wdata <= next_bs_wdata;
-            
-			if (next_do_write) begin
-				line_tags[current_set][current_way] = proc_tag;
-				line_validity[current_set][current_way] = CacheLineValid;
-				lines[current_set][current_way] <= next_content;
-			end
 
+            core_rdata <= next_core_rdata;
+            
             if (fifo_do_increase)
                 if (fifo_counters[current_set] == WAY_COUNT - 1)
                     fifo_counters[current_set] <= 'b0;
                 else
                     fifo_counters[current_set] <= fifo_counters[current_set] + 1;
 
+            if (word_ctr_do_increase)
+                word_ctr <= word_ctr + 1;
+            else
+                word_ctr <= word_ctr;
         end
     end
     
@@ -190,11 +236,16 @@ module set_associative_cache #(
         current_set,
         core_addr_i, core_wdata_i, core_we_i, core_be_i, core_req_i,
         mem_rvalid_i, mem_gnt_i, mem_rdata_i,
-        proc_write_enable, proc_data, proc_addr, proc_be,
-        bs_wdata, bs_write_enable,
-        lines, line_validity, line_tags, fifo_counters
+        proc_write_enable, proc_data, proc_addr, proc_tag, proc_be,
+        bs_wdata, bs_write_enable, bs_addr, bs_req_do,
+        cache_valid_o, cache_tag_o, cache_line_o,
+        block_det_outs, block_det_valid,
+        fifo_counters
      ) begin
         NS         = CS;
+        
+        next_block_det_outs  = block_det_outs;
+        next_block_det_valid = block_det_valid;
 
         next_set           = current_set;
         next_way         = current_way;
@@ -209,20 +260,21 @@ module set_associative_cache #(
         next_bs_wdata        = bs_wdata;
 
         fifo_do_increase   =  1'b0;
-        next_do_write      =  1'b0;
-		for (i = 0; i < WAY_WORD_COUNT; i = i + 1) begin
-			next_content[i] = 32'b0;
-		end
+        cache_write_enable =  1'b0;
 
-        for (i = 0; i < 2; i = i + 1) begin
-            block_det_outs[i] <= 'b0;
-            block_det_valid[i] <= 0;
-        end
+        cache_valid_i      =  1'b0;
+        cache_tag_i        =   'b0;
+        cache_line_i       =   'b0;
+        cache_be_i         =   'b0;
+
+        next_core_rdata    = core_rdata;
+
+        word_ctr_do_increase = 1'b0;
         
         case (CS)
             NoRequest: begin
                 next_set       = 6'b0;
-                next_way     =  'b0;
+                next_way       =  'b0;
 
                 next_proc_data         = 32'b0;
                 next_proc_write_enable = 1'b0;
@@ -248,31 +300,40 @@ module set_associative_cache #(
 				// 1. See if the `tag` is already in the cache
 				// 2. See if there is an empty block
 				// 3. Find the next FIFO determined block
+				next_block_det_valid[0] = 1'b0;
+				
                 for (j = 0; j < WAY_COUNT; j = j + 1) begin
                     if (
-                        line_validity[current_set][j] == CacheLineValid &&
-                        line_tags[current_set][j] == proc_tag
+                        cache_valid_o[j] == CacheLineValid &&
+                        cache_tag_o[TAG_IDX_SIZE*j +: TAG_IDX_SIZE] == proc_tag
                     ) begin
-                        block_det_outs[0] = j;
-                        block_det_valid[0] = 1;
+                        next_block_det_outs[$clog2(WAY_COUNT)-1:0] = j;
+                        next_block_det_valid[0] = 1'b1;
                         
                         break;
                     end
                 end
                 
+                next_block_det_valid[1] = 1'b0;
+                
                 for (j = 0; j < WAY_COUNT; j = j + 1) begin
-                    if (line_validity[current_set][j] == CacheLineInvalid) begin
-                        block_det_outs[1] = j;
-                        block_det_valid[1] = 1;
+                    if (
+                        cache_valid_o[j] != CacheLineValid
+                    ) begin
+                        next_block_det_outs[$clog2(WAY_COUNT)*2-1:$clog2(WAY_COUNT)] = j;
+                        next_block_det_valid[1] = 1'b1;
 
                         break;
                     end
                 end
 
+                NS = SelectBlock;
+            end
+            SelectBlock: begin
                 case (block_det_valid)
-                    2'b1?: begin
+                    2'b01, 2'b11: begin
                         // Cache Hit
-                        next_way = block_det_outs[0];
+                        next_way = block_det_outs[0 +: $clog2(WAY_COUNT)];
 
                         // Cache hit
                         if (~proc_write_enable)
@@ -280,9 +341,9 @@ module set_associative_cache #(
                         else
                             NS = WriteCache;
                     end
-                    2'b01: begin
+                    2'b10: begin
                         // Cache Miss - With Empty Block
-                        next_way = block_det_outs[1];
+                        next_way = block_det_outs[$clog2(WAY_COUNT) +: $clog2(WAY_COUNT)];
 
                         NS = ReadMemReq;
                     end
@@ -293,12 +354,18 @@ module set_associative_cache #(
 
                         NS = ReadMemReq;
                     end
-                end
+                endcase
             end
 			ReadMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b0;
 				next_bs_wdata        = 32'b0;
+
+                next_bs_addr         = {
+                    proc_addr[31:$clog2(WAY_WORD_COUNT)+2],
+                    word_ctr,
+                    2'b00
+                };
 
                 if (mem_gnt_i) begin
                     NS = ReadMemWait;
@@ -306,42 +373,35 @@ module set_associative_cache #(
 			end
 			ReadMemWait: begin
                 if (mem_rvalid_i) begin
-					for (i = 0; i < WAY_WORD_COUNT; i = i + 1) begin
-						if (i == proc_way_word)
-							next_content[i] = mem_rdata_i;
-						else
-							next_content[i] = lines[current_set][current_way][i];
-					end
-                    next_do_write = 1'b1;
+                    cache_line_i[proc_way_word*32 +: 32] = mem_rdata_i;
+					word_ctr_do_increase = 1'b1;
 
-                    if (~proc_write_enable)
-                        NS = Done;
-                    else
-                        NS = WriteCache;
+                    if ( & word_ctr ) begin
+                        cache_write_enable = 1'b1;
+
+                        if (~proc_write_enable)
+                            NS = Done;
+                        else
+                            NS = WriteCache;
+                    end
+                    else begin
+                        NS = ReadMemReq;
+                    end
                 end
 			end
             WriteCache: begin
-				next_do_write = 1'b1;
-
-				for (i = 0; i < WAY_WORD_COUNT; i = i + 1) begin
-					if (i == proc_way_word) begin
-						for (bi = 0; bi < 4; bi = bi + 1) begin
-							if (proc_be[bi])
-								next_content[i][(bi+1)*8-1 -: 8] = proc_data[(bi+1)*8-1 -: 8];
-							else
-								next_content[i][(bi+1)*8-1 -: 8] = lines[current_set][current_way][i][(bi+1)*8-1 -: 8];
-						end
-					end
-					else
-						next_content[i] = lines[current_set][current_way][i];
-				end
+				cache_write_enable = 1'b1;
+                cache_valid_i = 1'b1;
+                cache_tag_i = proc_tag;
+                cache_line_i[proc_way_word*32 +: 32] = proc_data;
+                cache_be_i[proc_way_word*4 +: 4] = 4'b1111;
 
                 NS = WriteMemReq;
             end
 			WriteMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
-				next_bs_wdata        = lines[current_set][current_way][proc_way_word];
+				next_bs_wdata        = cache_line_o[32*proc_way_word +: 32];
 
                 if (mem_rvalid_i) begin
                     NS = WriteMemWait;
@@ -353,6 +413,8 @@ module set_associative_cache #(
                 end
 			end
             Done: begin
+                core_rdata = cache_line_o[32*proc_way_word +: 32];
+
                 if (core_req_i) begin
                     next_proc_data = core_wdata_i;
                     next_proc_write_enable = core_we_i;
