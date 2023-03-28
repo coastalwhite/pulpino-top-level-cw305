@@ -51,13 +51,14 @@ module cache_mem_wrap #(
 	input wire  [WAY_WORD_COUNT*32-1:0] line_i,
 	input wire  [WAY_WORD_COUNT*4-1:0]  line_be_i,
 
-	output wire                         line_valid_o,
+	output reg  [WAY_COUNT-1:0]         line_valid_o,
 	output wire [TAG_IDX_SIZE-1:0]      line_tag_o,
 	output wire [WAY_WORD_COUNT*32-1:0] line_o
 );
     wire [VALIDITY_ADDR_SIZE-1:0] validity_ram_addr;
-	wire [7:0] validity_ram_rdata;
-	wire [7:0] validity_ram_wdata;
+	wire [WAY_COUNT*8-1:0] validity_ram_rdata;
+	reg  [WAY_COUNT*8-1:0] validity_ram_wdata;
+    reg  [WAY_COUNT-1:0] validity_ram_be;
 
     wire [TAG_ADDR_SIZE-1:0] tag_ram_addr;
 	wire [31:0] tag_ram_rdata;
@@ -65,23 +66,38 @@ module cache_mem_wrap #(
 
     wire [CONTENT_ADDR_SIZE-1:0] content_ram_addr;
 
-	assign line_valid_o = validity_ram_rdata[0];
+    integer i;
+    always @ (validity_ram_rdata) begin
+        for (i = 0; i < WAY_COUNT; i = i + 1)
+            line_valid_o[i] = validity_ram_rdata[i*8];
+    end
+    always @ (way, line_valid_i) begin
+        validity_ram_be      =  'b0;
+        validity_ram_be[way] = 1'b1;
+
+        for (i = 0; i < WAY_COUNT; i = i + 1) begin
+            if (way == i)
+                validity_ram_wdata[8*(i+1)-1 -: 8] = { 7'b0, line_valid_i };
+            else
+                validity_ram_wdata[8*(i+1)-1 -: 8] = 8'b0;
+        end
+    end
+
 	assign line_tag_o   = tag_ram_rdata[TAG_IDX_SIZE-1:0];
 
-    assign validity_ram_wdata = { 7'b0, line_valid_i };
     assign tag_ram_wdata      = { { (32 - TAG_IDX_SIZE) {1'b0} }, line_tag_i };
 
 	wire [31:0] addr = { {(32 - SET_IDX_SIZE) {1'b0}}, set } * WAY_WORD_COUNT +
                        { {(32 - $clog2(WAY_COUNT)) {1'b0}}, way };
 
-    assign validity_ram_addr = addr[VALIDITY_ADDR_SIZE-1:0];
+    assign validity_ram_addr = addr[VALIDITY_ADDR_SIZE-1:0] * WAY_COUNT;
     assign tag_ram_addr      = addr[TAG_IDX_SIZE-1:0] * 2;
     assign content_ram_addr  = addr[CONTENT_ADDR_SIZE-1:0] * WAY_WORD_COUNT * 2;
 
     sp_ram_wrap
     #(
       .RAM_SIZE   ( VALIDITY_NUM_BYTES ),
-      .DATA_WIDTH ( 8 )
+      .DATA_WIDTH ( 8 * WAY_COUNT )
     )
     validity_mem
     (
@@ -92,7 +108,7 @@ module cache_mem_wrap #(
       .wdata_i      ( validity_ram_wdata                       ),
       .rdata_o      ( validity_ram_rdata                       ),
       .we_i         ( val_write_enable | write_enable          ),
-      .be_i         ( 1'b1                                     ),
+      .be_i         ( validity_ram_be                          ),
       .bypass_en_i  ( 1'b0                                     )
     );
     

@@ -11,8 +11,8 @@ module cache_mem_wrap_tb();
   reg [127:0] line_i;
   reg [15:0]  line_be_i;
 
-  wire        line_valid_o;
-  wire [21:0] line_tag_o;
+  wire [1:0]   line_valid_o;
+  wire [21:0]  line_tag_o;
   wire [127:0] line_o;
 
   reg clk;
