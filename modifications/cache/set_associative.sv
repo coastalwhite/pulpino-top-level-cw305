@@ -45,7 +45,6 @@ module set_associative_cache #(
     input wire         mem_rvalid_i,
     input wire         mem_error_i
 );
-
 	reg                    line_validity [SET_COUNT][WAY_COUNT];
 	reg [TAG_IDX_SIZE-1:0] line_tags     [SET_COUNT][WAY_COUNT];
     reg [31:0]             lines         [SET_COUNT][WAY_COUNT][WAY_WORD_COUNT];
@@ -223,10 +222,10 @@ module set_associative_cache #(
         case (state)
             NoRequest: begin
                 next_set       = 6'b0;
-                next_block  =  'b0;
+                next_block     =  'b0;
 
                 next_proc_data         = 32'b0;
-                next_proc_write_enable = 1'b0; // CacheRead is just the default type
+                next_proc_write_enable = 1'b0;
                 next_proc_addr         = 32'b0;
                 next_proc_be           = 4'b0;
 
@@ -270,31 +269,31 @@ module set_associative_cache #(
                     end
                 end
 
-                if (block_det_valid[0]) begin
-                    // Cache Hit
-                    next_block = block_det_outs[0];
+                case (block_det_valid)
+                    2'b1?: begin
+                        // Cache Hit
+                        next_block = block_det_outs[0];
 
-                    // Cache hit
-                    if (~proc_write_enable)
-                        next_state = Done;
-                    else
-                        next_state = WriteCache;
+                        // Cache hit
+                        if (~proc_write_enable)
+                            next_state = Done;
+                        else
+                            next_state = WriteCache;
+                    end
+                    2'b01: begin
+                        // Cache Miss - With Empty Block
+                        next_block = block_det_outs[1];
+
+                        next_state = ReadMemReq;
+                    end
+                    2'b00: begin
+                        // Cache Miss - Without Empty Block
+                        next_block = fifo_counters[current_set];
+                        fifo_do_increase = 1'b1;
+
+                        next_state = ReadMemReq;
+                    end
                 end
-                else if (block_det_valid[1]) begin
-                    // Cache Miss - With Empty Block
-                    next_block = block_det_outs[1];
-
-                    next_state = ReadMemReq;
-                end
-                else begin
-                    // Cache Miss - Without Empty Block
-                    next_block = fifo_counters[current_set];
-                    fifo_do_increase = 1'b1;
-
-                    next_state = ReadMemReq;
-                end
-                        
-
             end
 			ReadMemReq: begin
 				next_bs_req_do       = 1'b1;
