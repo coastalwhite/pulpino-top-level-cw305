@@ -54,8 +54,8 @@ module set_associative_cache #(
     reg [$clog2(SET_COUNT)-1:0] next_set;
     reg [$clog2(SET_COUNT)-1:0] current_set;
 
-    reg [$clog2(WAY_COUNT)-1:0] current_block;
-    reg [$clog2(WAY_COUNT)-1:0] next_block;
+    reg [$clog2(WAY_COUNT)-1:0] current_way;
+    reg [$clog2(WAY_COUNT)-1:0] next_way;
 
     reg [$clog2(WAY_COUNT)-1:0] block_det_outs [2];
     reg block_det_valid [2];
@@ -86,8 +86,8 @@ module set_associative_cache #(
     reg        next_do_write;
     reg [31:0] next_content [WAY_WORD_COUNT];
     
-    reg [3:0] state;
-    reg [3:0] next_state;
+    reg [3:0] CS;
+    reg [3:0] NS;
 
     reg bs_write_enable;
     reg bs_req_do;
@@ -112,9 +112,9 @@ module set_associative_cache #(
         CacheLineValid      = 1'b1,
         CacheLineInvalid    = 1'b0;
 
-    assign core_rdata_o   = lines[current_set][current_block][proc_way_word];
-    assign core_gnt_o     = state == FindSet;
-    assign core_rvalid_o  = state == Done;
+    assign core_rdata_o   = lines[current_set][current_way][proc_way_word];
+    assign core_gnt_o     = CS == FindSet;
+    assign core_rvalid_o  = CS == Done;
     // NOTE: In the pulpino core this is just set to zero.
     assign core_error_o   = 1'b0;
 
@@ -128,10 +128,10 @@ module set_associative_cache #(
     integer i, j, k, bi, top_bit, bot_bit;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
-            state       <= NoRequest;
+            CS       <= NoRequest;
 
             current_set   <= 6'b0;
-            current_block <=  'b0;
+            current_way <=  'b0;
 
             proc_data         <= 32'b0;
             proc_write_enable <= 1'b0;
@@ -156,10 +156,10 @@ module set_associative_cache #(
             end
         end
         else begin
-            state       <= next_state;
+            CS       <= NS;
 
             current_set   <= next_set;
-            current_block <= next_block;
+            current_way <= next_way;
 
             proc_data         <= next_proc_data;
             proc_write_enable <= next_proc_write_enable;
@@ -171,9 +171,9 @@ module set_associative_cache #(
             bs_wdata <= next_bs_wdata;
             
 			if (next_do_write) begin
-				line_tags[current_set][current_block] = proc_tag;
-				line_validity[current_set][current_block] = CacheLineValid;
-				lines[current_set][current_block] <= next_content;
+				line_tags[current_set][current_way] = proc_tag;
+				line_validity[current_set][current_way] = CacheLineValid;
+				lines[current_set][current_way] <= next_content;
 			end
 
             if (fifo_do_increase)
@@ -186,7 +186,7 @@ module set_associative_cache #(
     end
     
     always @ (
-        state,
+        CS,
         current_set,
         core_addr_i, core_wdata_i, core_we_i, core_be_i, core_req_i,
         mem_rvalid_i, mem_gnt_i, mem_rdata_i,
@@ -194,10 +194,10 @@ module set_associative_cache #(
         bs_wdata, bs_write_enable,
         lines, line_validity, line_tags, fifo_counters
      ) begin
-        next_state         = state;
+        NS         = CS;
 
         next_set           = current_set;
-        next_block         = current_block;
+        next_way         = current_way;
 
         next_proc_data         = proc_data;
         next_proc_addr         = proc_addr;
@@ -219,10 +219,10 @@ module set_associative_cache #(
             block_det_valid[i] <= 0;
         end
         
-        case (state)
+        case (CS)
             NoRequest: begin
                 next_set       = 6'b0;
-                next_block     =  'b0;
+                next_way     =  'b0;
 
                 next_proc_data         = 32'b0;
                 next_proc_write_enable = 1'b0;
@@ -235,12 +235,12 @@ module set_associative_cache #(
                     next_proc_be = core_be_i;
                     next_proc_addr = core_addr_i;
 
-                    next_state = FindSet;
+                    NS = FindSet;
                 end
             end
             FindSet: begin
                 next_set   = proc_set;
-                next_state = FindBlock;
+                NS = FindBlock;
             end
             FindBlock: begin
 				// FindBlock has 3 steps. If at any of these steps it finds
@@ -272,26 +272,26 @@ module set_associative_cache #(
                 case (block_det_valid)
                     2'b1?: begin
                         // Cache Hit
-                        next_block = block_det_outs[0];
+                        next_way = block_det_outs[0];
 
                         // Cache hit
                         if (~proc_write_enable)
-                            next_state = Done;
+                            NS = Done;
                         else
-                            next_state = WriteCache;
+                            NS = WriteCache;
                     end
                     2'b01: begin
                         // Cache Miss - With Empty Block
-                        next_block = block_det_outs[1];
+                        next_way = block_det_outs[1];
 
-                        next_state = ReadMemReq;
+                        NS = ReadMemReq;
                     end
                     2'b00: begin
                         // Cache Miss - Without Empty Block
-                        next_block = fifo_counters[current_set];
+                        next_way = fifo_counters[current_set];
                         fifo_do_increase = 1'b1;
 
-                        next_state = ReadMemReq;
+                        NS = ReadMemReq;
                     end
                 end
             end
@@ -301,7 +301,7 @@ module set_associative_cache #(
 				next_bs_wdata        = 32'b0;
 
                 if (mem_gnt_i) begin
-                    next_state = ReadMemWait;
+                    NS = ReadMemWait;
                 end
 			end
 			ReadMemWait: begin
@@ -310,14 +310,14 @@ module set_associative_cache #(
 						if (i == proc_way_word)
 							next_content[i] = mem_rdata_i;
 						else
-							next_content[i] = lines[current_set][current_block][i];
+							next_content[i] = lines[current_set][current_way][i];
 					end
                     next_do_write = 1'b1;
 
                     if (~proc_write_enable)
-                        next_state = Done;
+                        NS = Done;
                     else
-                        next_state = WriteCache;
+                        NS = WriteCache;
                 end
 			end
             WriteCache: begin
@@ -329,27 +329,27 @@ module set_associative_cache #(
 							if (proc_be[bi])
 								next_content[i][(bi+1)*8-1 -: 8] = proc_data[(bi+1)*8-1 -: 8];
 							else
-								next_content[i][(bi+1)*8-1 -: 8] = lines[current_set][current_block][i][(bi+1)*8-1 -: 8];
+								next_content[i][(bi+1)*8-1 -: 8] = lines[current_set][current_way][i][(bi+1)*8-1 -: 8];
 						end
 					end
 					else
-						next_content[i] = lines[current_set][current_block][i];
+						next_content[i] = lines[current_set][current_way][i];
 				end
 
-                next_state = WriteMemReq;
+                NS = WriteMemReq;
             end
 			WriteMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
-				next_bs_wdata        = lines[current_set][current_block][proc_way_word];
+				next_bs_wdata        = lines[current_set][current_way][proc_way_word];
 
                 if (mem_rvalid_i) begin
-                    next_state = WriteMemWait;
+                    NS = WriteMemWait;
                 end
 			end
 			WriteMemWait: begin
                 if (mem_rvalid_i) begin
-                    next_state = Done;
+                    NS = Done;
                 end
 			end
             Done: begin
@@ -359,10 +359,10 @@ module set_associative_cache #(
                     next_proc_be = core_be_i;
                     next_proc_addr = core_addr_i;
 
-                    next_state = FindSet;
+                    NS = FindSet;
                 end
                 else
-                    next_state = NoRequest;
+                    NS = NoRequest;
             end
         endcase
     end
