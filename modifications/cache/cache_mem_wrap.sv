@@ -27,8 +27,8 @@ module cache_mem_wrap #(
         TOTAL_NUM_WAYS     = SET_COUNT * WAY_COUNT,
         TOTAL_NUM_WORDS    = TOTAL_NUM_WAYS * WAY_WORD_COUNT,
 
-        VALIDITY_NUM_BYTES = TOTAL_NUM_WAYS,
-        VALIDITY_ADDR_SIZE = $clog2(VALIDITY_NUM_BYTES),
+        VALIDITY_NUM_BITS  = TOTAL_NUM_WAYS,
+        VALIDITY_ADDR_SIZE = $clog2(VALIDITY_NUM_BITS),
 
         TAG_NUM_BYTES      = TOTAL_NUM_WAYS * 4,
         TAG_ADDR_SIZE      = $clog2(TAG_NUM_BYTES),
@@ -56,9 +56,6 @@ module cache_mem_wrap #(
 	output wire [WAY_WORD_COUNT*32-1:0] line_o
 );
     wire [VALIDITY_ADDR_SIZE-1:0] validity_ram_addr;
-	wire [WAY_COUNT*8-1:0] validity_ram_rdata;
-	reg  [WAY_COUNT*8-1:0] validity_ram_wdata;
-    reg  [WAY_COUNT-1:0] validity_ram_be;
 
     wire [TAG_ADDR_SIZE-1:0] tag_ram_addr;
 	reg  [WAY_COUNT*32-1:0] tag_ram_rdata;
@@ -68,21 +65,11 @@ module cache_mem_wrap #(
     wire [CONTENT_ADDR_SIZE-1:0] content_ram_addr;
 
     integer i;
-    always @ (validity_ram_rdata) begin
-        for (i = 0; i < WAY_COUNT; i = i + 1)
-            line_valid_o[i] = validity_ram_rdata[i*8];
-    end
     always @ (tag_ram_rdata) begin
         for (i = 0; i < WAY_COUNT; i = i + 1)
             line_tag_o[i*TAG_IDX_SIZE +: TAG_IDX_SIZE] = tag_ram_rdata[i*32 +: TAG_IDX_SIZE];
     end
     always @ (way, line_valid_i, line_tag_i) begin
-        validity_ram_be      =  'b0;
-        validity_ram_be[way] = 1'b1;
-
-        validity_ram_wdata   = 'b0;
-        validity_ram_wdata[8*way] = line_valid_i;
-
         tag_ram_wdata = 'b0;
         tag_ram_wdata[32*way +: TAG_IDX_SIZE] = line_tag_i;
 
@@ -94,27 +81,26 @@ module cache_mem_wrap #(
 	wire [31:0] way_addr = { {(32 - $clog2(WAY_COUNT)) {1'b0}}, way };
     wire [31:0] content_offset = (set_addr * WAY_COUNT + way_addr) * WAY_WORD_COUNT * 4;
 
+    always @ (validities, set_addr) begin
+        line_valid_o = validities[set_addr*WAY_COUNT +: WAY_COUNT];
+    end
+
     assign validity_ram_addr = set_addr[VALIDITY_ADDR_SIZE-1:0] * WAY_COUNT;
     assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * WAY_COUNT * 4;
     assign content_ram_addr  = content_offset[CONTENT_ADDR_SIZE-1:0];
 
-    sp_ram_wrap
-    #(
-      .RAM_SIZE   ( VALIDITY_NUM_BYTES ),
-      .DATA_WIDTH ( 8 * WAY_COUNT )
-    )
-    validity_mem
-    (
-      .clk          ( clk                                      ),
-      .rstn_i       ( ~reset                                   ),
-      .en_i         ( enable                                   ),
-      .addr_i       ( validity_ram_addr                        ),
-      .wdata_i      ( validity_ram_wdata                       ),
-      .rdata_o      ( validity_ram_rdata                       ),
-      .we_i         ( val_write_enable | write_enable          ),
-      .be_i         ( validity_ram_be                          ),
-      .bypass_en_i  ( 1'b0                                     )
-    );
+    reg [VALIDITY_NUM_BITS-1:0] validities;
+
+    always @ (posedge clk, posedge reset) begin
+        if (reset) begin
+            validities <= 'b0;
+        end
+        else begin
+            if (enable && (write_enable || val_write_enable)) begin
+                validities[validity_ram_addr] <= line_valid_i;
+            end
+        end
+    end
     
     sp_ram_wrap
     #(
