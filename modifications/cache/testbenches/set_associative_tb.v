@@ -31,7 +31,7 @@ module set_associative_tb();
 
   sp_ram_wrap
   #(
-    .RAM_SIZE   ( 32),
+    .RAM_SIZE   ( 32768 ),
     .DATA_WIDTH ( 32)
   )
   data_mem
