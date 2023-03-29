@@ -62,6 +62,24 @@ module set_associative_cache #(
     wire [WAY_COUNT*TAG_IDX_SIZE-1:0]      cache_tag_o;
     wire [WAY_WORD_COUNT*32-1:0] cache_line_o;
 
+    wire [$clog2(WAY_COUNT)-1:0] replacement_way;
+    reg                          replacement_taken;
+    wire                         replacement_ready;
+
+    replacement_policy #(
+        .WAY_COUNT     (WAY_COUNT),
+        .SET_COUNT     (SET_COUNT)
+    ) U_replacement (
+        .clk(clk),
+        .reset(reset),
+
+	    .set(current_set),
+	    .way(replacement_way),
+
+        .taken(replacement_taken),
+        .ready(replacement_ready)
+    );
+
     cache_mem_wrap #(
         .WAY_COUNT     (WAY_COUNT),
         .SET_COUNT     (SET_COUNT),
@@ -86,8 +104,6 @@ module set_associative_cache #(
         .line_tag_o(cache_tag_o),
         .line_o(cache_line_o)
     );
-
-    reg [$clog2(WAY_COUNT)-1:0] fifo_counters [SET_COUNT];
 
     reg [$clog2(SET_COUNT)-1:0] next_set;
     reg [$clog2(SET_COUNT)-1:0] current_set;
@@ -122,8 +138,6 @@ module set_associative_cache #(
     reg        next_proc_write_enable;
     reg [3:0]  next_proc_be;
     reg [31:0] next_proc_addr;
-    
-    reg        fifo_do_increase;
     
     reg [3:0] CS;
     reg [3:0] NS;
@@ -202,10 +216,6 @@ module set_associative_cache #(
             core_rdata <= 32'b0;
 
             word_ctr <= 32'b0;
-
-            for (i = 0; i < SET_COUNT; i = i + 1) begin
-                fifo_counters[i] <= 'b0;
-            end
         end
         else begin
             CS       <= NS;
@@ -232,12 +242,6 @@ module set_associative_cache #(
             bs_wdata <= next_bs_wdata;
 
             core_rdata <= next_core_rdata;
-            
-            if (fifo_do_increase)
-                if (fifo_counters[current_set] == WAY_COUNT - 1)
-                    fifo_counters[current_set] <= 'b0;
-                else
-                    fifo_counters[current_set] <= fifo_counters[current_set] + 1;
 
             if (word_ctr_do_increase)
                 word_ctr <= word_ctr + 1;
@@ -256,7 +260,7 @@ module set_associative_cache #(
         cache_valid_o, cache_tag_o, cache_line_o,
         cache_valid_i, cache_tag_i, cache_line_i, cache_be_i,
         block_det_outs, block_det_valid,
-        fifo_counters
+        replacement_way, replacement_ready
      ) begin
         NS         = CS;
         
@@ -275,7 +279,7 @@ module set_associative_cache #(
         next_bs_write_enable = 1'b0;
         next_bs_wdata        = bs_wdata;
 
-        fifo_do_increase   =  1'b0;
+        replacement_taken  =  1'b0;
         cache_write_enable =  1'b0;
 
         next_cache_valid_i      =  cache_valid_i;
@@ -315,7 +319,7 @@ module set_associative_cache #(
 				// a suitable block it will move on.
 				// 1. See if the `tag` is already in the cache
 				// 2. See if there is an empty block
-				// 3. Find the next FIFO determined block
+				// 3. Find the next RP determined block
 				next_block_det_valid[0] = 1'b0;
 				
                 for (j = 0; j < WAY_COUNT; j = j + 1) begin
@@ -364,11 +368,15 @@ module set_associative_cache #(
                         NS = ReadMemReq;
                     end
                     2'b00: begin
-                        // Cache Miss - Without Empty Block
-                        next_way = fifo_counters[current_set];
-                        fifo_do_increase = 1'b1;
+                        if (replacement_ready) begin
+                            // Cache Miss - Without Empty Block
+                            next_way = replacement_way;
+                            replacement_taken = 1'b1;
 
-                        NS = ReadMemReq;
+                            NS = ReadMemReq;
+                        end
+                        else
+                            NS = SelectBlock;
                     end
                 endcase
             end
