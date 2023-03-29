@@ -30,11 +30,9 @@ module cache_mem_wrap #(
         VALIDITY_NUM_BITS  = TOTAL_NUM_WAYS,
         VALIDITY_ADDR_SIZE = $clog2(VALIDITY_NUM_BITS),
 
-        TAG_NUM_BYTES      = TOTAL_NUM_WAYS * 4,
-        TAG_ADDR_SIZE      = $clog2(TAG_NUM_BYTES),
+        TAG_ADDR_SIZE      = $clog2(SET_COUNT) + 2,
         
-        CONTENT_NUM_BYTES  = TOTAL_NUM_WORDS * 4,
-        CONTENT_ADDR_SIZE  = $clog2(CONTENT_NUM_BYTES)
+        CONTENT_ADDR_SIZE  = $clog2(SET_COUNT * WAY_COUNT) + 2
 ) (
 	input wire                          clk,
 	input wire                          reset,
