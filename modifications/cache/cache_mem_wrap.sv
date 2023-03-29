@@ -64,6 +64,8 @@ module cache_mem_wrap #(
 
     wire [CONTENT_ADDR_SIZE-1:0] content_ram_addr;
 
+    reg [VALIDITY_NUM_BITS-1:0] validities;
+
     integer i;
     always @ (tag_ram_rdata) begin
         for (i = 0; i < WAY_COUNT; i = i + 1)
@@ -88,8 +90,6 @@ module cache_mem_wrap #(
     assign validity_ram_addr = set_addr[VALIDITY_ADDR_SIZE-1:0] * WAY_COUNT;
     assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * WAY_COUNT * 4;
     assign content_ram_addr  = content_offset[CONTENT_ADDR_SIZE-1:0];
-
-    reg [VALIDITY_NUM_BITS-1:0] validities;
 
     always @ (posedge clk, posedge reset) begin
         if (reset) begin

@@ -12,8 +12,8 @@ module replacement_policy #(
     output wire [$clog2(WAY_COUNT)-1:0] way,
 
     input wire taken,
-    output wire ready,
-)
+    output wire ready
+);
     reg [$clog2(WAY_COUNT)-1:0] fifo_counters [SET_COUNT-1:0];
 
     integer i;
@@ -30,4 +30,5 @@ module replacement_policy #(
 
     assign way   = fifo_counters[set];
     assign ready = 1'b1;
-endmodule;
+endmodule
+`default_nettype wire
