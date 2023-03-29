@@ -52,12 +52,12 @@ module set_associative_cache #(
     reg                         cache_valid_i;
     reg [TAG_IDX_SIZE-1:0]      cache_tag_i;
     reg [WAY_WORD_COUNT*32-1:0] cache_line_i;
-    reg [WAY_WORD_COUNT*4-1:0]  cache_be_i;
+    reg [WAY_WORD_COUNT*4-1:0]  cache_ww_enable_i;
 
     reg                         next_cache_valid_i;
     reg [TAG_IDX_SIZE-1:0]      next_cache_tag_i;
     reg [WAY_WORD_COUNT*32-1:0] next_cache_line_i;
-    reg [WAY_WORD_COUNT*4-1:0]  next_cache_be_i;
+    reg [WAY_WORD_COUNT*4-1:0]  next_cache_ww_enable_i;
 
     wire [WAY_COUNT-1:0]         cache_valid_o;
     wire [WAY_COUNT*TAG_IDX_SIZE-1:0]      cache_tag_o;
@@ -99,7 +99,7 @@ module set_associative_cache #(
 	    .line_valid_i(cache_valid_i),
 	    .line_tag_i(cache_tag_i),
 	    .line_i(cache_line_i),
-	    .line_be_i(cache_be_i),
+	    .line_ww_enable_i(cache_ww_enable_i),
 
         .line_valid_o(cache_valid_o),
         .line_tag_o(cache_tag_o),
@@ -207,7 +207,7 @@ module set_associative_cache #(
             cache_valid_i     <= 1'b0;
             cache_tag_i       <=  'b0;
             cache_line_i      <=  'b0;
-            cache_be_i        <=  'b0;
+            cache_ww_enable_i <=  'b0;
 
             bs_addr <= 32'b0;
             bs_req_do       <= 1'b0;
@@ -237,7 +237,7 @@ module set_associative_cache #(
             cache_valid_i     <= next_cache_valid_i;
             cache_tag_i       <= next_cache_tag_i;
             cache_line_i      <= next_cache_line_i;
-            cache_be_i        <= next_cache_be_i;
+            cache_ww_enable_i <= next_cache_ww_enable_i;
 
             bs_addr <= next_bs_addr;
             bs_req_do       <= next_bs_req_do;
@@ -263,7 +263,7 @@ module set_associative_cache #(
         proc_write_enable, proc_data, proc_addr, proc_tag, proc_be,
         bs_wdata, bs_write_enable, bs_addr, bs_req_do,
         cache_valid_o, cache_tag_o, cache_line_o,
-        cache_valid_i, cache_tag_i, cache_line_i, cache_be_i,
+        cache_valid_i, cache_tag_i, cache_line_i, cache_ww_enable_i,
         block_det_outs, block_det_valid,
         replacement_way, replacement_ready
      ) begin
@@ -292,7 +292,7 @@ module set_associative_cache #(
         next_cache_valid_i      =  cache_valid_i;
         next_cache_tag_i        =  cache_tag_i;
         next_cache_line_i       =  cache_line_i;
-        next_cache_be_i         =  cache_be_i;
+        next_cache_ww_enable_i  =  cache_ww_enable_i;
 
         next_core_rdata    = core_rdata;
 
@@ -412,7 +412,7 @@ module set_associative_cache #(
                     if ( & word_ctr ) begin
                         next_cache_valid_i = 1'b1;
                         next_cache_tag_i   = proc_tag;
-                        next_cache_be_i    = { (WAY_COUNT) {4'b1111} };
+                        next_cache_ww_enable_i    = { WAY_COUNT {1'b1} };
                         
                         next_cache_we      = 1'b1;
 
@@ -432,7 +432,7 @@ module set_associative_cache #(
                 next_cache_valid_i = 1'b1;
                 next_cache_tag_i = proc_tag;
                 next_cache_line_i[proc_way_word*32 +: 32] = proc_data;
-                next_cache_be_i[proc_way_word*4 +: 4] = 4'b1111;
+                next_cache_ww_enable_i[proc_way_word] = 1'b1;
 
                 NS = WriteMemReq;
             end

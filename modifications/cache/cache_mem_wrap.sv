@@ -49,7 +49,7 @@ module cache_mem_wrap #(
 	input wire                          line_valid_i,
 	input wire  [TAG_IDX_SIZE-1:0]      line_tag_i,
 	input wire  [WAY_WORD_COUNT*32-1:0] line_i,
-	input wire  [WAY_WORD_COUNT*4-1:0]  line_be_i,
+	input wire  [WAY_WORD_COUNT-1:0]  line_ww_enable_i,
 
 	output reg  [WAY_COUNT-1:0]         line_valid_o,
 	output reg  [TAG_IDX_SIZE*WAY_COUNT-1:0] line_tag_o,
@@ -59,7 +59,6 @@ module cache_mem_wrap #(
     wire [TAG_ADDR_SIZE-1:0] tag_ram_addr;
 	reg  [WAY_COUNT*32-1:0] tag_ram_rdata;
 	reg  [WAY_COUNT*32-1:0] tag_ram_wdata;
-    reg  [4*WAY_COUNT-1:0] tag_ram_be;
 
     wire [CONTENT_ADDR_SIZE-1:0] content_ram_addr;
 
@@ -70,23 +69,20 @@ module cache_mem_wrap #(
         for (i = 0; i < WAY_COUNT; i = i + 1)
             line_tag_o[i*TAG_IDX_SIZE +: TAG_IDX_SIZE] = tag_ram_rdata[i*32 +: TAG_IDX_SIZE];
     end
-    always @ (way, line_valid_i, line_tag_i) begin
+    always @ (way, line_tag_i) begin
         tag_ram_wdata = 'b0;
         tag_ram_wdata[32*way +: TAG_IDX_SIZE] = line_tag_i;
-
-        tag_ram_be = 'b0;
-        tag_ram_be[4*way +: 4] = 4'b1111;
     end
 
     wire [31:0] set_addr = { {(32 - SET_IDX_SIZE) {1'b0}}, set };
 	wire [31:0] way_addr = { {(32 - $clog2(WAY_COUNT)) {1'b0}}, way };
-    wire [31:0] content_offset = (set_addr * WAY_COUNT + way_addr) * WAY_WORD_COUNT * 4;
+    wire [31:0] content_offset = (set_addr * WAY_WORD_COUNT + way_addr) * 4;
 
     always @ (validities, set_addr) begin
         line_valid_o = validities[set_addr*WAY_COUNT +: WAY_COUNT];
     end
 
-    assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * WAY_COUNT * 4;
+    assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * 4;
     assign content_ram_addr  = content_offset[CONTENT_ADDR_SIZE-1:0];
 
     always @ (posedge clk, posedge reset) begin
@@ -100,41 +96,51 @@ module cache_mem_wrap #(
         end
     end
     
-    sp_ram_wrap
-    #(
-      .RAM_SIZE   ( TAG_NUM_BYTES ),
-      .DATA_WIDTH ( 32 * WAY_COUNT )
-    )
-    tag_mem
-    (
-      .clk          ( clk           ),
-      .rstn_i       ( ~reset        ),
-      .en_i         ( enable        ),
-      .addr_i       ( tag_ram_addr  ),
-      .wdata_i      ( tag_ram_wdata ),
-      .rdata_o      ( tag_ram_rdata ),
-      .we_i         ( write_enable  ),
-      .be_i         ( tag_ram_be    ),
-      .bypass_en_i  ( 1'b0          )
-    );
+    genvar j;
+    generate
+        for (j = 0; j < WAY_COUNT; j = j + 1) begin
+            sp_ram_wrap
+            #(
+              .RAM_SIZE   ( SET_COUNT * 4 ),
+              .DATA_WIDTH ( 32 )
+            )
+            tag_mem
+            (
+              .clk          ( clk                        ),
+              .rstn_i       ( ~reset                     ),
+              .en_i         ( enable                     ),
+              .addr_i       ( tag_ram_addr               ),
+              .wdata_i      ( tag_ram_wdata[32*j +: 32]  ),
+              .rdata_o      ( tag_ram_rdata[32*j +: 32]  ),
+              .we_i         ( write_enable && (way == j) ),
+              .be_i         ( 4'b1111                    ),
+              .bypass_en_i  ( 1'b0                       )
+            );
+        end
+    endgenerate
     
-    sp_ram_wrap
-    #(
-      .RAM_SIZE   ( CONTENT_NUM_BYTES ),
-      .DATA_WIDTH ( 32 * WAY_WORD_COUNT )
-    )
-    content_mem
-    (
-      .clk          ( clk              ),
-      .rstn_i       ( ~reset           ),
-      .en_i         ( enable           ),
-      .addr_i       ( content_ram_addr ),
-      .wdata_i      ( line_i           ),
-      .rdata_o      ( line_o           ),
-      .we_i         ( write_enable     ),
-      .be_i         ( line_be_i        ),
-      .bypass_en_i  ( 1'b0             )
-    );
+    genvar k;
+    generate
+        for (k = 0; k < WAY_WORD_COUNT; k = k + 1) begin
+            sp_ram_wrap
+            #(
+              .RAM_SIZE   ( SET_COUNT * WAY_COUNT * 4 ),
+              .DATA_WIDTH ( 32 )
+            )
+            content_mem
+            (
+              .clk          ( clk                                 ),
+              .rstn_i       ( ~reset                              ),
+              .en_i         ( enable                              ),
+              .addr_i       ( content_ram_addr                    ),
+              .wdata_i      ( line_i[32*k +: 32]                  ),
+              .rdata_o      ( line_o[32*k +: 32]                  ),
+              .we_i         ( write_enable && line_ww_enable_i[j] ),
+              .be_i         ( 4'b1111                             ),
+              .bypass_en_i  ( 1'b0                                )
+            );
+        end
+    endgenerate
 endmodule
 
 `default_nettype wire
