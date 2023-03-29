@@ -9,7 +9,7 @@ module cache_mem_wrap_tb();
   reg        line_valid_i;
   reg [21:0] line_tag_i;
   reg [127:0] line_i;
-  reg [15:0]  line_be_i;
+  reg [3:0]  line_ww_enable_i;
 
   wire [1:0]   line_valid_o;
   wire [22*2-1:0]  line_tag_o;
@@ -32,7 +32,7 @@ module cache_mem_wrap_tb();
 	.line_valid_i(line_valid_i),
 	.line_tag_i(line_tag_i),
 	.line_i(line_i),
-	.line_be_i(line_be_i),
+	.line_ww_enable_i(line_ww_enable_i),
 
 	.line_valid_o(line_valid_o),
 	.line_tag_o(line_tag_o),
@@ -54,7 +54,7 @@ module cache_mem_wrap_tb();
 	  line_valid_i <= 0;
 	  line_tag_i <= 0;
 	  line_i <= 0;
-	  line_be_i <= 16'hFFFF;
+	  line_ww_enable_i <= 16'hF;
 
       rst_n <= 0;
 

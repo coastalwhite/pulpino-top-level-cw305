@@ -126,7 +126,7 @@ module set_associative_tb();
       core_data_wdata <= 32'b0;
 
       rst_n <= 1'b0;
-      #5
+      #2
       #10 
       rst_n <= 1'b1;
 
@@ -141,6 +141,32 @@ module set_associative_tb();
       core_data_we <= 1'b0;
       core_data_wdata <= 32'h0000_0000;
       core_data_be <= 4'b0;
+
+      // ----
+      // Cache Miss
+      #200
+      core_data_addr <= 32'h0010_0020;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Hit
+      #200
+      core_data_addr <= 32'h0010_0020;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Hit
+      #200
+      core_data_addr <= 32'h0010_0030;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+      // ----
 
       // Cache Hit
       #200
@@ -225,6 +251,38 @@ module set_associative_tb();
       // Cache Miss
       #150
       core_data_addr <= 32'h0010_0304;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #150
+      core_data_addr <= 32'h0010_1300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #150
+      core_data_addr <= 32'h0010_2300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Hit
+      #150
+      core_data_addr <= 32'h0010_1300;
+      core_data_req <= 1'b1;
+
+      #10
+      core_data_req <= 1'b0;
+
+      // Cache Miss
+      #150
+      core_data_addr <= 32'h0010_0300;
       core_data_req <= 1'b1;
 
       #10
