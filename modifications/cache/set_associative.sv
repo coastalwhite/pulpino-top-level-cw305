@@ -313,11 +313,13 @@ module set_associative_cache #(
                     next_proc_be = core_be_i;
                     next_proc_addr = core_addr_i;
 
+                    next_set   = core_addr_i[SET_IDX_END:SET_IDX_START];
+
                     NS = FindSet;
                 end
             end
             FindSet: begin
-                next_set   = proc_set;
+                // We need to give some time for the cache to read the tag
                 NS = FindBlock;
             end
             FindBlock: begin
@@ -344,7 +346,7 @@ module set_associative_cache #(
                 
                 for (j = 0; j < WAY_COUNT; j = j + 1) begin
                     if (
-                        cache_valid_o[j] != CacheLineValid
+                        cache_valid_o[j] == CacheLineInvalid
                     ) begin
                         next_block_det_outs[$clog2(WAY_COUNT)*2-1:$clog2(WAY_COUNT)] = j;
                         next_block_det_valid[1] = 1'b1;
