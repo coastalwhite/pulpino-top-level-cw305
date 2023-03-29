@@ -257,7 +257,7 @@ module set_associative_cache #(
     
     always @ (
         CS,
-        current_set,
+        current_set, current_way,
         core_addr_i, core_wdata_i, core_we_i, core_be_i, core_req_i,
         mem_rvalid_i, mem_gnt_i, mem_rdata_i,
         proc_write_enable, proc_data, proc_addr, proc_tag, proc_be,
@@ -283,6 +283,7 @@ module set_associative_cache #(
         next_bs_req_do       = 1'b0;
         next_bs_write_enable = 1'b0;
         next_bs_wdata        = bs_wdata;
+        next_bs_addr         = bs_addr;
 
         replacement_taken  =  1'b0;
 
