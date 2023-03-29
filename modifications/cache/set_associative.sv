@@ -46,7 +46,8 @@ module set_associative_cache #(
     input wire         mem_rvalid_i,
     input wire         mem_error_i
 );
-    reg cache_write_enable;
+    reg cache_we;
+    reg next_cache_we;
 
     reg                         cache_valid_i;
     reg [TAG_IDX_SIZE-1:0]      cache_tag_i;
@@ -92,7 +93,7 @@ module set_associative_cache #(
 	    .way(current_way),
 
 	    .enable(1'b1),
-	    .write_enable(cache_write_enable),
+	    .write_enable(cache_we),
 	    .val_write_enable(1'b0),
 
 	    .line_valid_i(cache_valid_i),
@@ -215,6 +216,8 @@ module set_associative_cache #(
 
             core_rdata <= 32'b0;
 
+            cache_we <= 1'b0;
+
             word_ctr <= 32'b0;
         end
         else begin
@@ -242,6 +245,8 @@ module set_associative_cache #(
             bs_wdata <= next_bs_wdata;
 
             core_rdata <= next_core_rdata;
+
+            cache_we <= next_cache_we;
 
             if (word_ctr_do_increase)
                 word_ctr <= word_ctr + 1;
@@ -280,7 +285,8 @@ module set_associative_cache #(
         next_bs_wdata        = bs_wdata;
 
         replacement_taken  =  1'b0;
-        cache_write_enable =  1'b0;
+
+        next_cache_we      =  1'b0;
 
         next_cache_valid_i      =  cache_valid_i;
         next_cache_tag_i        =  cache_tag_i;
@@ -402,9 +408,10 @@ module set_associative_cache #(
 
                     if ( & word_ctr ) begin
                         next_cache_valid_i = 1'b1;
-                        next_cache_tag_i = proc_tag;
-                        next_cache_be_i = { (WAY_COUNT) {4'b1111} };
-                        cache_write_enable = 1'b1;
+                        next_cache_tag_i   = proc_tag;
+                        next_cache_be_i    = { (WAY_COUNT) {4'b1111} };
+                        
+                        next_cache_we      = 1'b1;
 
                         if (~proc_write_enable)
                             NS = Done;
@@ -417,7 +424,8 @@ module set_associative_cache #(
                 end
 			end
             WriteCache: begin
-				cache_write_enable = 1'b1;
+                next_cache_we      = 1'b1;
+
                 next_cache_valid_i = 1'b1;
                 next_cache_tag_i = proc_tag;
                 next_cache_line_i[proc_way_word*32 +: 32] = proc_data;
