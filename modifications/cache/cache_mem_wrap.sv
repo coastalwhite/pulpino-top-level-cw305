@@ -55,7 +55,6 @@ module cache_mem_wrap #(
 	output reg  [TAG_IDX_SIZE*WAY_COUNT-1:0] line_tag_o,
 	output wire [WAY_WORD_COUNT*32-1:0] line_o
 );
-    wire [VALIDITY_ADDR_SIZE-1:0] validity_ram_addr;
 
     wire [TAG_ADDR_SIZE-1:0] tag_ram_addr;
 	reg  [WAY_COUNT*32-1:0] tag_ram_rdata;
@@ -87,7 +86,6 @@ module cache_mem_wrap #(
         line_valid_o = validities[set_addr*WAY_COUNT +: WAY_COUNT];
     end
 
-    assign validity_ram_addr = set_addr[VALIDITY_ADDR_SIZE-1:0] * WAY_COUNT;
     assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * WAY_COUNT * 4;
     assign content_ram_addr  = content_offset[CONTENT_ADDR_SIZE-1:0];
 
@@ -97,7 +95,7 @@ module cache_mem_wrap #(
         end
         else begin
             if (enable && (write_enable || val_write_enable)) begin
-                validities[validity_ram_addr] <= line_valid_i;
+                validities[set * WAY_COUNT + way] <= line_valid_i;
             end
         end
     end
