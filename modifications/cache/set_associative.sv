@@ -450,7 +450,7 @@ module set_associative_cache #(
                 end
 			end
             Done: begin
-                core_rdata = cache_line_o[32*proc_way_word +: 32];
+                next_core_rdata = cache_line_o[32*proc_way_word +: 32];
 
                 if (core_req_i) begin
                     next_proc_data = core_wdata_i;
