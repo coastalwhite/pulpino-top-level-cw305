@@ -1,79 +1,64 @@
---- /home/johndoe/Downloads/pulpino/rtl/core_region.sv	2022-04-09 10:49:28.000000000 +0200
-+++ mods-and-docs/cache/core_region.sv	2023-03-21 17:37:17.869368175 +0100
-@@ -516,6 +516,15 @@
-     .slave       ( data_slave        )
-   );
- 
-+  wire        core_mem_req;
-+  wire        core_mem_gnt;
-+  wire        core_mem_rvalid;
-+  wire [31:0] core_mem_addr;
-+  wire        core_mem_we;
-+  wire [3:0]  core_mem_be;
-+  wire [31:0] core_mem_rdata;
-+  wire [31:0] core_mem_wdata;
-+
- 
-   ram_mux
-   #(
-@@ -538,14 +547,14 @@
-     .port0_rdata_o  ( axi_mem_rdata    ),
-     .port0_wdata_i  ( axi_mem_wdata    ),
- 
--    .port1_req_i    ( core_data_req    ),
--    .port1_gnt_o    ( core_data_gnt    ),
--    .port1_rvalid_o ( core_data_rvalid ),
--    .port1_addr_i   ( core_data_addr[DATA_ADDR_WIDTH-1:0] ),
--    .port1_we_i     ( core_data_we     ),
--    .port1_be_i     ( core_data_be     ),
--    .port1_rdata_o  ( core_data_rdata  ),
--    .port1_wdata_i  ( core_data_wdata  ),
-+    .port1_req_i    ( core_mem_req    ),
-+    .port1_gnt_o    ( core_mem_gnt    ),
-+    .port1_rvalid_o ( core_mem_rvalid ),
-+    .port1_addr_i   ( core_mem_addr[DATA_ADDR_WIDTH-1:0] ),
-+    .port1_we_i     ( core_mem_we     ),
-+    .port1_be_i     ( core_mem_be     ),
-+    .port1_rdata_o  ( core_mem_rdata  ),
-+    .port1_wdata_i  ( core_mem_wdata  ),
- 
-     .ram_en_o       ( data_mem_en      ),
-     .ram_addr_o     ( data_mem_addr    ),
-@@ -554,6 +563,37 @@
-     .ram_rdata_i    ( data_mem_rdata   ),
-     .ram_wdata_o    ( data_mem_wdata   )
-   );
-+  
-+  direct_mapped_cache data_mem_cache (
-+    .clk(clk),
-+    .reset(~rst_n),
-+
-+    // Core Side
-+    .core_addr_i(core_data_addr),
-+    .core_wdata_i(core_data_wdata),
-+    .core_we_i(core_data_we),
-+    .core_req_i(core_data_req),
-+    .core_be_i(core_data_be), // Write Byte Mask
-+
-+    .core_rdata_o(core_data_rdata),
-+    .core_gnt_o(core_data_gnt), // Access Granted
-+    .core_rvalid_o(core_data_rvalid), // Request Valid
-+    .core_error_o(),
-+
-+    // Memory Side
-+    .mem_addr_o(core_mem_addr),
-+    .mem_wdata_o(core_mem_wdata),
-+    .mem_we_o(core_mem_we),
-+    .mem_req_o(core_mem_req),
-+    .mem_be_o(core_mem_be),
-+
-+    .mem_rdata_i(core_mem_rdata),
-+    .mem_gnt_i(core_mem_gnt),
-+    .mem_rvalid_i(core_mem_rvalid),
-+    .mem_error_i(1'b0)
-+
-+  );
-+
- 
- 
-   //----------------------------------------------------------------------------//
+517a518,526
+>   wire        core_mem_req;
+>   wire        core_mem_gnt;
+>   wire        core_mem_rvalid;
+>   wire [31:0] core_mem_addr;
+>   wire        core_mem_we;
+>   wire [3:0]  core_mem_be;
+>   wire [31:0] core_mem_rdata;
+>   wire [31:0] core_mem_wdata;
+> 
+540,547c549,556
+<     .port1_req_i    ( core_data_req    ),
+<     .port1_gnt_o    ( core_data_gnt    ),
+<     .port1_rvalid_o ( core_data_rvalid ),
+<     .port1_addr_i   ( core_data_addr[DATA_ADDR_WIDTH-1:0] ),
+<     .port1_we_i     ( core_data_we     ),
+<     .port1_be_i     ( core_data_be     ),
+<     .port1_rdata_o  ( core_data_rdata  ),
+<     .port1_wdata_i  ( core_data_wdata  ),
+---
+>     .port1_req_i    ( core_mem_req    ),
+>     .port1_gnt_o    ( core_mem_gnt    ),
+>     .port1_rvalid_o ( core_mem_rvalid ),
+>     .port1_addr_i   ( core_mem_addr[DATA_ADDR_WIDTH-1:0] ),
+>     .port1_we_i     ( core_mem_we     ),
+>     .port1_be_i     ( core_mem_be     ),
+>     .port1_rdata_o  ( core_mem_rdata  ),
+>     .port1_wdata_i  ( core_mem_wdata  ),
+555a565,599
+>   
+>   set_associative_cache #(
+>     .SET_COUNT(64),
+>     .WAY_COUNT(2),
+>     .WAY_WORD_COUNT(4)
+>   ) data_mem_cache (
+>     .clk(clk),
+>     .reset(~rst_n),
+> 
+>     // Core Side
+>     .core_addr_i(core_data_addr),
+>     .core_wdata_i(core_data_wdata),
+>     .core_we_i(core_data_we),
+>     .core_req_i(core_data_req),
+>     .core_be_i(core_data_be), // Write Byte Mask
+> 
+>     .core_rdata_o(core_data_rdata),
+>     .core_gnt_o(core_data_gnt), // Access Granted
+>     .core_rvalid_o(core_data_rvalid), // Request Valid
+>     .core_error_o(),
+> 
+>     // Memory Side
+>     .mem_addr_o(core_mem_addr),
+>     .mem_wdata_o(core_mem_wdata),
+>     .mem_we_o(core_mem_we),
+>     .mem_req_o(core_mem_req),
+>     .mem_be_o(core_mem_be),
+> 
+>     .mem_rdata_i(core_mem_rdata),
+>     .mem_gnt_i(core_mem_gnt),
+>     .mem_rvalid_i(core_mem_rvalid),
+>     .mem_error_i(1'b0)
+> 
+>   );
+> 
