@@ -31,36 +31,41 @@ module cache_mem_wrap #(
         VALIDITY_ADDR_SIZE = $clog2(VALIDITY_NUM_BITS),
 
         TAG_ADDR_SIZE      = $clog2(SET_COUNT) + 2,
-        
         CONTENT_ADDR_SIZE  = $clog2(SET_COUNT * WAY_COUNT) + 2
 ) (
-	input wire                          clk,
-	input wire                          reset,
+	input wire                               clk,
+	input wire                               reset,
 
-	input wire  [SET_IDX_SIZE-1:0]      set,
-	input wire  [$clog2(WAY_COUNT)-1:0] way,
+	input wire  [SET_IDX_SIZE-1:0]           set,
+	input wire  [$clog2(WAY_COUNT)-1:0]      way,
 
-	input wire                          enable,
-	input wire					        write_enable,
-	input wire					        val_write_enable,
+	input wire                               enable,
+	input wire					             write_enable,
+	input wire					             val_write_enable,
 
-	input wire                          line_valid_i,
-	input wire  [TAG_IDX_SIZE-1:0]      line_tag_i,
-	input wire  [WAY_WORD_COUNT*32-1:0] line_i,
-	input wire  [WAY_WORD_COUNT-1:0]  line_ww_enable_i,
+	input wire                               line_valid_i,
+	input wire  [TAG_IDX_SIZE-1:0]           line_tag_i,
+	input wire  [WAY_WORD_COUNT*32-1:0]      line_i,
+    // Bit per way content word, which determines whether to write to that word
+    // - 1 = Do Write
+    // - 0 = Don't Write
+	input wire  [WAY_WORD_COUNT-1:0]         line_ww_enable_i,
 
-	output reg  [WAY_COUNT-1:0]         line_valid_o,
+    // All the validities for the current set
+	output reg  [WAY_COUNT-1:0]              line_valid_o,
+    // All the tags for the current set
 	output reg  [TAG_IDX_SIZE*WAY_COUNT-1:0] line_tag_o,
-	output wire [WAY_WORD_COUNT*32-1:0] line_o
+    // Content of the current set and way
+	output wire [WAY_WORD_COUNT*32-1:0]      line_o
 );
 
     wire [TAG_ADDR_SIZE-1:0] tag_ram_addr;
-	reg  [WAY_COUNT*32-1:0] tag_ram_rdata;
-	reg  [WAY_COUNT*32-1:0] tag_ram_wdata;
+	reg  [WAY_COUNT*32-1:0]  tag_ram_rdata;
+	reg  [WAY_COUNT*32-1:0]  tag_ram_wdata;
 
     wire [CONTENT_ADDR_SIZE-1:0] content_ram_addr;
 
-    reg [VALIDITY_NUM_BITS-1:0] validities;
+    reg [VALIDITY_NUM_BITS-1:0]  validities;
 
     integer i;
     always @ (tag_ram_rdata) begin
@@ -76,24 +81,22 @@ module cache_mem_wrap #(
 	wire [31:0] way_addr = { {(32 - $clog2(WAY_COUNT)) {1'b0}}, way };
     wire [31:0] content_offset = (set_addr * WAY_WORD_COUNT + way_addr) * 4;
 
-    always @ (validities, set_addr) begin
-        line_valid_o = validities[set_addr*WAY_COUNT +: WAY_COUNT];
-    end
+    assign line_valid_o = validities[set_addr*WAY_COUNT +: WAY_COUNT];
 
     assign tag_ram_addr      = set_addr[TAG_ADDR_SIZE-1:0] * 4;
     assign content_ram_addr  = content_offset[CONTENT_ADDR_SIZE-1:0];
 
     always @ (posedge clk, posedge reset) begin
-        if (reset) begin
+        if (reset)
             validities <= 'b0;
-        end
         else begin
-            if (enable && (write_enable || val_write_enable)) begin
+            if (enable && (write_enable || val_write_enable))
                 validities[set * WAY_COUNT + way] <= line_valid_i;
-            end
         end
     end
     
+    // Generate several busses for the tag storage. This is needed so we can
+    // assess the availability of a line in parallel.
     genvar j;
     generate
         for (j = 0; j < WAY_COUNT; j = j + 1) begin
@@ -117,6 +120,8 @@ module cache_mem_wrap #(
         end
     endgenerate
     
+    // Generate several busses for the content storage. This way we can read the
+    // entire line in parallel.
     genvar k;
     generate
         for (k = 0; k < WAY_WORD_COUNT; k = k + 1) begin
