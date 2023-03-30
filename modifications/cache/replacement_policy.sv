@@ -39,7 +39,7 @@ module replacement_policy #(
         end
     end
 
-    assign way   = fifo_counters[set];
-    assign ready = ~taken;
+    assign replacement_way = fifo_counters[set];
+    assign ready           = 1'b1;
 endmodule
 `default_nettype wire
