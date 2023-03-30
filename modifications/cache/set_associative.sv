@@ -64,6 +64,8 @@ module set_associative_cache #(
     wire [WAY_WORD_COUNT*32-1:0] cache_line_o;
 
     wire [$clog2(WAY_COUNT)-1:0] replacement_way;
+    reg                          replacement_read;
+    reg                          replacement_written;
     reg                          replacement_taken;
     wire                         replacement_ready;
 
@@ -75,7 +77,12 @@ module set_associative_cache #(
         .reset(reset),
 
 	    .set(current_set),
-	    .way(replacement_way),
+        .way(current_way),
+
+	    .replacement_way(replacement_way),
+
+        .read(replacement_read),
+        .written(replacement_written),
 
         .taken(replacement_taken),
         .ready(replacement_ready)
@@ -285,9 +292,11 @@ module set_associative_cache #(
         next_bs_wdata        = bs_wdata;
         next_bs_addr         = bs_addr;
 
-        replacement_taken  =  1'b0;
+        replacement_read     =  1'b0;
+        replacement_written  =  1'b0;
+        replacement_taken    =  1'b0;
 
-        next_cache_we      =  1'b0;
+        next_cache_we        =  1'b0;
 
         next_cache_valid_i      =  cache_valid_i;
         next_cache_tag_i        =  cache_tag_i;
@@ -452,6 +461,11 @@ module set_associative_cache #(
 			end
             Done: begin
                 next_core_rdata = cache_line_o[32*proc_way_word +: 32];
+
+                if (proc_write_enable)
+                    replacement_written = 1'b1;
+                else
+                    replacement_read    = 1'b1;
 
                 if (core_req_i) begin
                     next_proc_data = core_wdata_i;

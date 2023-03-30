@@ -9,8 +9,19 @@ module replacement_policy #(
     input wire reset,
 
     input wire [$clog2(SET_COUNT)-1:0] set,
-    output wire [$clog2(WAY_COUNT)-1:0] way,
+    input wire [$clog2(WAY_COUNT)-1:0] way,
 
+    // `way` that is selected for replacement within the `set`
+    output wire [$clog2(WAY_COUNT)-1:0] replacement_way,
+
+    // Pulse for a single clock cycle when the `set` + `way` has been read.
+    input wire read,
+    // Pulse for a single clock cycle when the `set` + `way` has been written
+    // to.
+    input wire written,
+
+    // Pulse for a single clock cycle when the `replacement_way` is used to
+    // replace a way.
     input wire taken,
     output wire ready
 );
@@ -29,6 +40,6 @@ module replacement_policy #(
     end
 
     assign way   = fifo_counters[set];
-    assign ready = 1'b1;
+    assign ready = ~taken;
 endmodule
 `default_nettype wire
