@@ -1,9 +1,13 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
+// Policies:
+// 0 = FIFO
+// 1 = Random
 module replacement_policy #(
     parameter WAY_COUNT = 2,
-    parameter SET_COUNT = 64
+    parameter SET_COUNT = 64,
+    parameter POLICY = 0
 ) (
     input wire clk,
     input wire reset,
@@ -25,21 +29,38 @@ module replacement_policy #(
     input wire taken,
     output wire ready
 );
-    reg [$clog2(WAY_COUNT)-1:0] fifo_counters [SET_COUNT-1:0];
+    generate
+    if (POLICY == 0) begin
+        reg [$clog2(WAY_COUNT)-1:0] fifo_counters [SET_COUNT-1:0];
 
-    integer i;
-    always @ (posedge clk, posedge reset) begin
-        if (reset) begin
-            for (i = 0; i < SET_COUNT; i = i + 1)
-                fifo_counters[i] <= 'b0;
+        integer i;
+        always @ (posedge clk, posedge reset) begin
+            if (reset) begin
+                for (i = 0; i < SET_COUNT; i = i + 1)
+                    fifo_counters[i] <= 'b0;
+            end
+            else begin
+                if (taken)
+                    fifo_counters[set] <= fifo_counters[set] + 1;
+            end
         end
-        else begin
-            if (taken)
-                fifo_counters[set] <= fifo_counters[set] + 1;
-        end
+
+        assign replacement_way = fifo_counters[set];
+        assign ready           = 1'b1;
     end
+    else if (POLICY == 1) begin
+        lfsr #(
+            .WIDTH($clog2(WAY_COUNT))
+        ) U_lfsr (
+            .clk   (clk),
+            .reset (reset),
+            .bits  (replacement_way)
+        );
 
-    assign replacement_way = fifo_counters[set];
-    assign ready           = 1'b1;
+        assign ready           = 1'b1;
+    end
+    else
+        $error("%m ** Invalid POLICY parameter for `replacement_policy`");
+    endgenerate
 endmodule
 `default_nettype wire
