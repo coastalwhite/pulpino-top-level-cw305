@@ -14,6 +14,6 @@ patch $PULPINO/rtl/core_region < $REPO/modifications/cache/core_region.sv.diff
 ```
 
 Second, you need to add the `modifications/cache/set_associative.sv`,
-`modifications/cache/cache_mem_wrap.sv` and
-`modifications/cache/replacement_policy.sv` to the source files of the Vivado
-project's design sources.
+`modifications/cache/cache_mem_wrap.sv`, `lfsr.sv`, and
+`modifications/cache/replacement_policy.sv` to the source files of
+the Vivado project's design sources.
