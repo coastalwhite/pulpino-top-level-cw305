@@ -20,7 +20,7 @@ terminal. Lastly, there are the steps to follow in [Vivado][vivado].
 - [Xilinx Vivado 2019.1][vivado]. This specific version can be found in the
   `Vivado Archive`. This may work on other versions of Vivado, but it has not
   been tested.
-- [Digilent Arty A7 Board Files][boardfiles]
+- [Board Files compatible with the CW305][boardfiles]
 - [PyEnv][pyenv]
 - `build-essential` for GCC, GIT, etc.
 - Any text editor
