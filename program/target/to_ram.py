@@ -6,6 +6,11 @@ if len(sys.argv) < 3:
     print("Usage: {} <Bin code File> <Python Array>".format(sys.argv[0]))
     exit(1)
 
+BLACKLISTED_LABELS = [
+    '.riscv.attributes',
+    '.comment',
+]
+
 BIN_CODE = sys.argv[1]
 MEM_FILE = sys.argv[2]
 
@@ -30,6 +35,13 @@ def to_addr(line):
     label = line[9:].strip()
     return addr, label
 
+def find_ws(s):
+    for i in range(len(s) - 1):
+        if s[i].isspace() and s[i+1].isspace():
+            return i
+
+    return None
+
 def objdump_line_to_hex(line):
     # Only select lines with instructions
     if line.isspace():
@@ -41,29 +53,78 @@ def objdump_line_to_hex(line):
     # <WS> <OFFSET>: <WS> <HEX DATA> <WS> <ASM INSTRUCTION>
 
     colon_index = line.index(':')
+    offset = line[:colon_index]
     line = line[colon_index + 1:]
     line = line.strip()
-    hex = line[:8]
-    asm = line[8:].strip()
+    
+    ws = find_ws(line)
 
-    return (hex, asm)
+    if ws == None:
+        return None
+
+    hexdata = line[:ws]
+    hexdata = hexdata.replace(' ', '')
+    asm = line[ws:].strip()
+
+    return (offset, hexdata, asm)
 
 LINES = ['RAM = [\n']
+CURRENT_OFFSET = 0x0000
+ignore_symbol = False
 for line in file_in_content:
     output = to_addr(line)
     
     if output != None:
         addr, label = output
+
+        ignore_symbol = False
+        for bl_label in BLACKLISTED_LABELS:
+            if '<{}>'.format(bl_label) in label:
+                ignore_symbol = True
+
         #file_out_memfile.writelines('\t# <{}>: \n'.format(label))
+        continue
+
+    if ignore_symbol:
         continue
 
     output = objdump_line_to_hex(line)
 
     if output != None:
-        hex, asm = output
-        bs = [hex[0:2], hex[2:4], hex[4:6], hex[6:8]]
+        offset, hexdata, asm = output
+        if len(hexdata) % 2 != 0:
+            print("[ERROR]: Hex data is not even length")
+            exit(1)
 
-        LINES.append('\t0x{}, 0x{}, 0x{}, 0x{}, # {}\n'.format(bs[3], bs[2], bs[1], bs[0], asm))
+        offset = int(offset, 16)
+        if offset != CURRENT_OFFSET:
+            if offset < CURRENT_OFFSET:
+                print("[ERROR]: Offset jumped back!")
+                exit(1)
+
+            if (offset - CURRENT_OFFSET) % 4 == 2:
+                LINES.append('\t0x00, 0x00, # PADDING\n')
+                CURRENT_OFFSET += 2
+
+            for _ in range(CURRENT_OFFSET, offset, 4):
+                LINES.append('\t0x00, 0x00, 0x00, 0x00, # PADDING\n')
+                CURRENT_OFFSET += 4
+
+            if offset != CURRENT_OFFSET:
+                print("[ERROR]: Failed to pad to new offset")
+                exit(1)
+
+
+        bs = [hexdata[i:i+2] for i in range(0, len(hexdata), 2)]
+
+        l = '\t'
+        for b in bs[::-1]:
+            l += '0x{}, '.format(b)
+        l += '# {}\n'.format(asm)
+        LINES.append(l)
+
+        CURRENT_OFFSET += len(bs)
+
         continue
 LINES.append(']\n')
 
