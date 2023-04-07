@@ -51,7 +51,7 @@ telling the linker script here that we have one pool of RAM.
 */
 MEMORY
 {
-  ram  (wxa) : ORIGIN = 0x00008000, LENGTH = 10M
+  ram  (wxa) : ORIGIN = 0x00000000, LENGTH = 10M
 }
 
 /*
@@ -93,6 +93,7 @@ SECTIONS
 	Since our CPU instructions are here, and our memory starts at
 	0x8000_0000, we need our entry point to line up here.
   */
+
   .text : {
 	  /* 
 	    PROVIDE allows me to access a symbol called _text_start so
@@ -207,6 +208,7 @@ SECTIONS
     PROVIDE(_bss_start = .);
     *(.sbss .sbss.*) *(.bss .bss.*)
     PROVIDE(_bss_end = .);
+	. = 0x108000;
   } >ram AT>ram :bss
 
   /*
