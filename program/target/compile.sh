@@ -112,7 +112,7 @@ else
 fi
 
 echo "Dumping binary file..."
-$RISCV_OBJDUMP -d $BIN_PATH > "../../dumps/$(basename $PROG_DIR).dump"
+$RISCV_OBJDUMP -D $BIN_PATH > "../../dumps/$(basename $PROG_DIR).dump"
 
 popd > /dev/null
 
