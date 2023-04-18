@@ -17,3 +17,11 @@ Second, you need to add the `modifications/cache/set_associative.sv`,
 `modifications/cache/cache_mem_wrap.sv`, `lfsr.sv`, and
 `modifications/cache/replacement_policy.sv` to the source files of
 the Vivado project's design sources.
+
+> **NOTE**: This cache is not perfectly tested and may still show problems. A
+> known problem is the lack of support for unaligned addresses. Furthermore, the
+> cache also does not improve access times. In fact, the cache will always
+> increase access time in comparison to the base implementation. This cache is
+> to test security properties of the core and is made to generate an asymmetry
+> between cached and non-cached accessed time. The cache is not made to resemble
+> an efficient cache. 
