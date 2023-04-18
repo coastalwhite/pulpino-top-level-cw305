@@ -374,9 +374,10 @@ module set_associative_cache #(
                         next_way = block_det_outs[0 +: $clog2(WAY_COUNT)];
 
                         // Cache hit
-                        if (~proc_write_enable)
+                        if (~proc_write_enable) begin
+                            next_core_rdata = cache_line_o[32*proc_way_word +: 32];
                             NS = Done;
-                        else
+                        end else
                             NS = WriteCache;
                     end
                     2'b10: begin
@@ -415,7 +416,11 @@ module set_associative_cache #(
 			end
 			ReadMemWait: begin
                 if (mem_rvalid_i) begin
-                    next_cache_line_i[proc_way_word*32 +: 32] = mem_rdata_i;
+                    next_cache_line_i[word_ctr*32 +: 32] = mem_rdata_i;
+
+                    if (~proc_write_enable && word_ctr == proc_way_word)
+                        next_core_rdata = mem_rdata_i;
+
 					word_ctr_do_increase = 1'b1;
 
                     if ( word_ctr == WAY_WORD_COUNT-1 ) begin
