@@ -162,7 +162,7 @@ module set_associative_cache #(
 
     reg [31:0] core_rdata;
     reg [31:0] next_core_rdata;
-
+    
     reg [$clog2(WAY_WORD_COUNT)-1:0] word_ctr;
     reg word_ctr_do_increase;
     
@@ -460,23 +460,12 @@ module set_associative_cache #(
                 end
 			end
             Done: begin
-                next_core_rdata = cache_line_o[32*proc_way_word +: 32];
-
                 if (proc_write_enable)
                     replacement_written = 1'b1;
                 else
                     replacement_read    = 1'b1;
 
-                if (core_req_i) begin
-                    next_proc_data = core_wdata_i;
-                    next_proc_write_enable = core_we_i;
-                    next_proc_be = core_be_i;
-                    next_proc_addr = core_addr_i;
-
-                    NS = FindSet;
-                end
-                else
-                    NS = NoRequest;
+                NS = NoRequest;
             end
         endcase
     end
