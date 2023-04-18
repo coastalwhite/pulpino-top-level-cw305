@@ -418,7 +418,7 @@ module set_associative_cache #(
                     next_cache_line_i[proc_way_word*32 +: 32] = mem_rdata_i;
 					word_ctr_do_increase = 1'b1;
 
-                    if ( & word_ctr ) begin
+                    if ( word_ctr == WAY_WORD_COUNT-1 ) begin
                         next_cache_valid_i = 1'b1;
                         next_cache_tag_i   = proc_tag;
                         next_cache_ww_enable_i    = { WAY_COUNT {1'b1} };
