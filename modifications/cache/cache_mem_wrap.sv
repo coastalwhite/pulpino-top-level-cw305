@@ -138,7 +138,7 @@ module cache_mem_wrap #(
               .addr_i       ( content_ram_addr                    ),
               .wdata_i      ( line_i[32*k +: 32]                  ),
               .rdata_o      ( line_o[32*k +: 32]                  ),
-              .we_i         ( write_enable && line_ww_enable_i[j] ),
+              .we_i         ( write_enable && line_ww_enable_i[k] ),
               .be_i         ( 4'b1111                             ),
               .bypass_en_i  ( 1'b0                                )
             );
