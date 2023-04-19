@@ -165,6 +165,7 @@ module set_associative_cache #(
     
     reg [$clog2(WAY_WORD_COUNT)-1:0] word_ctr;
     reg word_ctr_do_increase;
+    reg word_ctr_do_reset;
     
     localparam
         NoRequest           = 4'b0000,
@@ -255,10 +256,13 @@ module set_associative_cache #(
 
             cache_we <= next_cache_we;
 
-            if (word_ctr_do_increase)
-                word_ctr <= word_ctr + 1;
+            if (word_ctr_do_reset)
+                word_ctr <= 0;
             else
-                word_ctr <= word_ctr;
+                if (word_ctr_do_increase)
+                    word_ctr <= word_ctr + 1;
+                else
+                    word_ctr <= word_ctr;
         end
     end
     
@@ -305,6 +309,7 @@ module set_associative_cache #(
 
         next_core_rdata    = core_rdata;
 
+        word_ctr_do_reset    = 1'b0;
         word_ctr_do_increase = 1'b0;
         
         case (CS)
@@ -424,6 +429,8 @@ module set_associative_cache #(
 					word_ctr_do_increase = 1'b1;
 
                     if ( word_ctr == WAY_WORD_COUNT-1 ) begin
+                        word_ctr_do_reset = 1'b1;
+
                         next_cache_valid_i = 1'b1;
                         next_cache_tag_i   = proc_tag;
                         next_cache_ww_enable_i    = { WAY_COUNT {1'b1} };
