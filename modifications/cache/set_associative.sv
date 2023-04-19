@@ -317,6 +317,8 @@ module set_associative_cache #(
                 next_set       = 6'b0;
                 next_way       =  'b0;
 
+                next_core_rdata        = 32'b0;
+
                 next_proc_data         = 32'b0;
                 next_proc_write_enable = 1'b0;
                 next_proc_addr         = 32'b0;
