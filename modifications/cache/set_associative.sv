@@ -305,7 +305,7 @@ module set_associative_cache #(
         next_cache_valid_i      =  cache_valid_i;
         next_cache_tag_i        =  cache_tag_i;
         next_cache_line_i       =  cache_line_i;
-        next_cache_ww_enable_i  =  cache_ww_enable_i;
+        next_cache_ww_enable_i  =  'b0;
 
         next_core_rdata    = core_rdata;
 
@@ -433,7 +433,7 @@ module set_associative_cache #(
 
                         next_cache_valid_i = 1'b1;
                         next_cache_tag_i   = proc_tag;
-                        next_cache_ww_enable_i    = { WAY_COUNT {1'b1} };
+                        next_cache_ww_enable_i    = { WAY_WORD_COUNT {1'b1} };
                         
                         next_cache_we      = 1'b1;
 
