@@ -72,6 +72,9 @@ LINES = ['RAM = [\n']
 CURRENT_OFFSET = 0x0000
 ignore_symbol = False
 for line in file_in_content:
+    if 'Disassembly of section .riscv.attributes:' in line:
+        break
+
     output = to_addr(line)
     
     if output != None:

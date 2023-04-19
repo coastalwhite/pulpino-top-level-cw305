@@ -58,6 +58,9 @@ def objdump_line_to_hex(line):
 LINES = []
 HAS_SEEN_ENTRY = False
 for line in file_in_content:
+    if 'Disassembly of section .riscv.attributes:' in line:
+        break
+
     output = to_addr(line)
     
     if output != None:
