@@ -166,6 +166,8 @@ module set_associative_cache #(
     reg [$clog2(WAY_WORD_COUNT)-1:0] word_ctr;
     reg word_ctr_do_increase;
     reg word_ctr_do_reset;
+
+    reg [1:0] delay_ctr;
     
     localparam
         NoRequest           = 4'b0000,
@@ -177,7 +179,8 @@ module set_associative_cache #(
         WriteCache          = 4'b0110,
         WriteMemReq         = 4'b0111,
         WriteMemWait        = 4'b1000,
-        Done                = 4'b1001;
+        Done                = 4'b1001,
+        WaySelectDelay      = 4'b1010;
 
     localparam
         CacheLineValid      = 1'b1,
@@ -256,6 +259,11 @@ module set_associative_cache #(
 
             cache_we <= next_cache_we;
 
+            if (NS == WaySelectDelay)
+                delay_ctr <= delay_ctr - 1;
+            else
+                delay_ctr <= 2'b11;
+
             if (word_ctr_do_reset)
                 word_ctr <= 0;
             else
@@ -276,7 +284,8 @@ module set_associative_cache #(
         cache_valid_o, cache_tag_o, cache_line_o,
         cache_valid_i, cache_tag_i, cache_line_i, cache_ww_enable_i,
         block_det_outs, block_det_valid,
-        replacement_way, replacement_ready
+        replacement_way, replacement_ready,
+        word_ctr, delay_ctr
      ) begin
         NS         = CS;
         
@@ -381,10 +390,9 @@ module set_associative_cache #(
                         next_way = block_det_outs[0 +: $clog2(WAY_COUNT)];
 
                         // Cache hit
-                        if (~proc_write_enable) begin
-                            next_core_rdata = cache_line_o[32*proc_way_word +: 32];
-                            NS = Done;
-                        end else
+                        if (~proc_write_enable)
+                            NS = WaySelectDelay;
+                        else
                             NS = WriteCache;
                     end
                     2'b10: begin
@@ -405,6 +413,12 @@ module set_associative_cache #(
                             NS = SelectBlock;
                     end
                 endcase
+            end
+            WaySelectDelay: begin
+                if (delay_ctr == 0) begin
+                    next_core_rdata = cache_line_o[32*proc_way_word +: 32];
+                    NS = Done;
+                end
             end
 			ReadMemReq: begin
 				next_bs_req_do       = 1'b1;
