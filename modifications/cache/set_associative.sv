@@ -460,6 +460,7 @@ module set_associative_cache #(
 			WriteMemReq: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
+                next_bs_addr         = proc_addr;
 				next_bs_wdata        = cache_line_o[32*proc_way_word +: 32];
 
                 if (mem_rvalid_i) begin
