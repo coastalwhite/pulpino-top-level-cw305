@@ -28,14 +28,12 @@ pub fn read() -> u8 {
 }
 
 /// Blocking word read from the external machine. This will read bytes in big endian.
-#[inline]
 pub fn read_word() -> u32 {
     let bytes = [read(), read(), read(), read()];
     u32::from_be_bytes(bytes)
 }
 
 /// Blocking word write to the external machine. This will write bytes in big endian.
-#[inline]
 pub fn write_word(word: u32) {
     for b in word.to_be_bytes() {
         write(b);
