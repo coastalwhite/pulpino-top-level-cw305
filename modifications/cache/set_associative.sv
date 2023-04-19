@@ -52,12 +52,12 @@ module set_associative_cache #(
     reg                         cache_valid_i;
     reg [TAG_IDX_SIZE-1:0]      cache_tag_i;
     reg [WAY_WORD_COUNT*32-1:0] cache_line_i;
-    reg [WAY_WORD_COUNT*4-1:0]  cache_ww_enable_i;
+    reg [WAY_WORD_COUNT-1:0]    cache_ww_enable_i;
 
     reg                         next_cache_valid_i;
     reg [TAG_IDX_SIZE-1:0]      next_cache_tag_i;
     reg [WAY_WORD_COUNT*32-1:0] next_cache_line_i;
-    reg [WAY_WORD_COUNT*4-1:0]  next_cache_ww_enable_i;
+    reg [WAY_WORD_COUNT-1:0]    next_cache_ww_enable_i;
 
     wire [WAY_COUNT-1:0]         cache_valid_o;
     wire [WAY_COUNT*TAG_IDX_SIZE-1:0]      cache_tag_o;
