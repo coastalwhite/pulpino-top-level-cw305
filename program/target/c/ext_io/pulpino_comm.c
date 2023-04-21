@@ -75,6 +75,10 @@ void led(bool is_on) {
     (*GPIO_OUT) = ((*GPIO_OUT) & 0xFFFFFBFF) | (is_on ? 0x400 : 0);
 }
 
+void trigger(bool is_on) {
+    (*GPIO_OUT) = ((*GPIO_OUT) & 0xFFFFF7FF) | (is_on ? 0x800 : 0);
+}
+
 void program() {
     uint32_t start = read_word();
     uint32_t end   = read_word();

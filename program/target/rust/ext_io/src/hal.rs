@@ -82,4 +82,9 @@ impl GpioOut {
     pub fn led(value: bool) {
         Self::write((Self::read() & 0xFFFF_FBFF) | if value { 0x400 } else { 0x000 })
     }
+
+    #[inline]
+    pub fn trigger(value: bool) {
+        Self::write((Self::read() & 0xFFFF_F7FF) | if value { 0x800 } else { 0x000 })
+    }
 }

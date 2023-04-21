@@ -189,7 +189,8 @@ module cw305_top #(
     assign pulpino_read_flicker  = gpio_out[8];
     assign pulpino_data          = gpio_out[7:0];
     
-    assign led3 = gpio_out[10];
+    assign tio_trigger           = gpio_out[11];
+    assign led3                  = gpio_out[10];
 
 //	dummy_pulpino U_proc (
 	 pulpino U_proc (
