@@ -160,5 +160,11 @@ class PulpinoConnection():
     def reset(self):
         self.ftarget.fpga_write(FPGA_REGS['REG_RESET'], bytearray([1]))
 
+    def read_registers(self):
+        registers = [0]
+        for i in range(32):
+            registers.append(self.receive_word())
+        return registers
+
     def get_raw(self):
         return self.ftarget
