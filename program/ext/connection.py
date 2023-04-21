@@ -162,7 +162,7 @@ class PulpinoConnection():
 
     def read_registers(self):
         registers = [0]
-        for i in range(32):
+        for _ in range(31):
             registers.append(self.receive_word())
         return registers
 
