@@ -105,6 +105,7 @@ impl Timer {
     }
 }
 
+#[inline]
 pub fn read_registers() {
     unsafe {
         asm!("
