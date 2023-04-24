@@ -229,6 +229,8 @@ module set_associative_cache #(
 
             cache_we <= 1'b0;
 
+			delay_ctr <= 2'b11;
+
             word_ctr <= 32'b0;
         end
         else begin
