@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "pulpino_gpio.h"
+
 uint8_t read();
 void write(uint8_t byte);
 
@@ -12,6 +14,14 @@ void write_word(uint32_t word);
 
 void led(bool is_on);
 void program();
+
+static inline void trigger_high() {
+	(*GPIO_OUT) |= 0x00000800;
+}
+static inline void trigger_low() {
+	(*GPIO_OUT) &= 0xFFFFF7FF;
+}
+
 #define read_registers() \
     asm volatile(                  \
         "sw      sp,-120(sp)\n\t"  \

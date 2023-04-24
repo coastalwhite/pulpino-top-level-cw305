@@ -25,14 +25,6 @@ static inline uint8_t ext_data() {
 	return (uint8_t) ((*GPIO_IN) & 0xFF);
 }
 
-static inline void trigger_high() {
-	(*GPIO_OUT) |= 0x00000800;
-}
-
-static inline void trigger_low() {
-	(*GPIO_OUT) &= 0xFFFFF7FF;
-}
-
 // Blocking read from the external machine.
 uint8_t read() {
 	// Wait for the external to write something
