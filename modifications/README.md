@@ -25,3 +25,10 @@ the Vivado project's design sources.
 > to test security properties of the core and is made to generate an asymmetry
 > between cached and non-cached accessed time. The cache is not made to resemble
 > an efficient cache. 
+
+The cache is parameterized, meaning you can adjust several parameters, including
+the number of sets, number of ways, the 32-bit words per way and the replacement
+policy. There are currently 4 replacement policies available: FIFO, Random, LRU
+and MRU. All except the policy, can be set at the module instantiation. The
+policy can be set at the module instantiation of `replacement_policy` within the
+`set_associatve.sv` file.
