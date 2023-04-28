@@ -27,6 +27,7 @@ set_property PACKAGE_PIN N13 [get_ports pll_clk1]
 set_property PACKAGE_PIN T14 [get_ports tio_trigger]
 
 set_property PACKAGE_PIN M16 [get_ports tio_clkout]
+set_property PACKAGE_PIN M15 [get_ports tio_clkout_pin]
 
 set_property PACKAGE_PIN N14 [get_ports tio_clkin]
 
@@ -74,8 +75,13 @@ set_property PACKAGE_PIN A5 [get_ports usb_trigger]
 
 
 create_clock -period 10.000 -name usb_clk -waveform {0.000 5.000} [get_nets usb_clk]
+
+# Normal:
 create_clock -period 10.000 -name tio_clkin -waveform {0.000 5.000} [get_nets tio_clkin]
 create_clock -period 10.000 -name pll_clk1 -waveform {0.000 5.000} [get_nets pll_clk1]
+# Physical Separation between Core and Cache:
+# create_clock -period 50.000 -name tio_clkin -waveform {0.000 25.000} [get_nets tio_clkin]
+# create_clock -period 50.000 -name pll_clk1 -waveform {0.000 25.000} [get_nets pll_clk1]
 
 # both input clocks have same properties so there is no point in doing timing analysis for both:
 set_case_analysis 1 [get_pins U_clocks/CCLK_MUX/S]
@@ -98,12 +104,14 @@ set_output_delay -clock usb_clk 0.000 [get_ports led3]
 set_output_delay -clock usb_clk 0.000 [get_ports usb_data]
 set_output_delay -clock usb_clk 0.000 [get_ports tio_trigger]
 set_output_delay -clock usb_clk 0.000 [get_ports tio_clkout]
+set_output_delay -clock usb_clk 0.000 [get_ports tio_clkout_pin]
 set_false_path -to [get_ports led1]
 set_false_path -to [get_ports led2]
 set_false_path -to [get_ports led3]
 set_false_path -to [get_ports usb_data]
 set_false_path -to [get_ports tio_trigger]
 set_false_path -to [get_ports tio_clkout]
+set_false_path -to [get_ports tio_clkout_pin]
 
 set_property CFGBVS VCCO [current_design]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
@@ -113,3 +121,11 @@ set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
 connect_debug_port dbg_hub/clk [get_nets usb_clk_buf]
+
+# Physical Separation between Core and Cache:
+# create_pblock {processor}
+# create_pblock {cache}
+# resize_pblock {processor} -add CLOCKREGION_X0Y3:CLOCKREGION_X1Y3
+# resize_pblock {cache} -add CLOCKREGION_X0Y0:CLOCKREGION_X1Y0
+# add_cells_to_pblock {processor} [get_cells -hierarchical -filter {NAME=~U_proc/pulpino_i/core_region_i/CORE.RISCV_CORE/*}] -clear_locs
+# add_cells_to_pblock {cache} [get_cells -hierarchical -filter {NAME=~U_proc/pulpino_i/core_region_i/data_mem_cache/*}] -clear_locs

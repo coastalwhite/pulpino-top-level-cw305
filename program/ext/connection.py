@@ -3,6 +3,9 @@ import chipwhisperer as cw
 from chipwhisperer.capture.targets.CW305 import CW305
 
 PULPINO_CLK_FREQ = 100_000_000
+# When using the Separated Core and Care
+SEPARATED_PULPINO_CLK_FREQ = 20_000_000
+
 FPGA_REGS = dict(
     REG_EXT_PULPINO_DATA   = 0x00,
     REG_PULPINO_EXT_DATA   = 0x01,
@@ -15,7 +18,7 @@ class PulpinoConnection():
     _ext_read_flicker = False
     _ext_write_flicker = False
 
-    def __init__(self, bitfile_path, scope = None, force = False):
+    def __init__(self, bitfile_path, scope = None, force = False, separated = False):
         self.ftarget = cw.target(
             scope = scope,
             target_type = CW305,
@@ -34,7 +37,10 @@ class PulpinoConnection():
         self.ftarget.pll.pll_outenable_set(True, 1)
         self.ftarget.pll.pll_outenable_set(False, 2)
 
-        self.ftarget.pll.pll_outfreq_set(PULPINO_CLK_FREQ, 1)
+        if separated:
+            self.ftarget.pll.pll_outfreq_set(SEPARATED_PULPINO_CLK_FREQ, 1)
+        else:
+            self.ftarget.pll.pll_outfreq_set(PULPINO_CLK_FREQ, 1)
 
         # 1ms is plenty of idling time
         self.ftarget.clkusbautooff = False

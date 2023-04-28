@@ -113,6 +113,7 @@ module cw305_reg_pulpino #(
 			   `REG_EXT_PULPINO_DATA:   O_ext_data  <= write_data;
 			   `REG_EXT_PULPINO_FLAGS:  O_ext_flags <= write_data;
 			   `REG_RESET:              usb_reset   <= 1'b1;
+			   default: ;
             endcase
          end
       end

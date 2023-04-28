@@ -61,6 +61,7 @@ module cw305_top #(
     // 20-Pin Connector Stuff
     output wire                         tio_trigger,
     output wire                         tio_clkout,
+    output wire                         tio_clkout_pin,
     input  wire                         tio_clkin
     );
 
@@ -158,6 +159,7 @@ module cw305_top #(
        .I_cw_clkin              (tio_clkin),
        .I_pll_clk1              (pll_clk1),
        .O_cw_clkout             (tio_clkout),
+       .O_cw_clkout_pin         (tio_clkout_pin),
        .O_cryptoclk             (pulpino_clk)
     );
 

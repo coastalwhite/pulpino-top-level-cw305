@@ -38,6 +38,7 @@ module clocks (
     input  wire         I_pll_clk1,
 
     output wire         O_cw_clkout,
+    output wire         O_cw_clkout_pin,
     output wire         O_cryptoclk
 );
 
@@ -51,6 +52,7 @@ module clocks (
 `ifdef __ICARUS__
     assign O_cryptoclk = cclk_src_is_ext? I_cw_clkin : I_pll_clk1;
     assign O_cw_clkout = cclk_output_ext? O_cryptoclk : 1'b0;
+    assign O_cw_clkout_pin = cclk_output_ext? O_cryptoclk : 1'b0;
     assign usb_clk_bufg = usb_clk;
     assign usb_clk_buf = usb_clk_bufg;
 
@@ -64,6 +66,16 @@ module clocks (
 
     ODDR CWOUT_ODDR (
        .Q(O_cw_clkout),   // 1-bit DDR output
+       .C(O_cryptoclk),   // 1-bit clock input
+       .CE(cclk_output_ext), // 1-bit clock enable input
+       .D1(1'b1), // 1-bit data input (positive edge)
+       .D2(1'b0), // 1-bit data input (negative edge)
+       .R(1'b0),   // 1-bit reset
+       .S(1'b0)    // 1-bit set
+    );
+    
+    ODDR CWOUT_PIN_ODDR (
+       .Q(O_cw_clkout_pin),   // 1-bit DDR output
        .C(O_cryptoclk),   // 1-bit clock input
        .CE(cclk_output_ext), // 1-bit clock enable input
        .D1(1'b1), // 1-bit data input (positive edge)
