@@ -15,9 +15,9 @@ class PulpinoConnection():
     _ext_read_flicker = False
     _ext_write_flicker = False
 
-    def __init__(self, bitfile_path, force = False):
+    def __init__(self, bitfile_path, scope = None, force = False):
         self.ftarget = cw.target(
-            scope = None,
+            scope = scope,
             target_type = CW305,
             bsfile=bitfile_path,
             fpga_id='100t', force=force
