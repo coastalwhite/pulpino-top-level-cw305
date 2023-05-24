@@ -2,7 +2,11 @@
 
 ## Cache
 
-For the cache, you need to make two adjustments.
+The [`./cache`](./cache) folder provides an implementation for a write-through
+write-allocate set-associative cache with several properties parameterized. This
+cache sits between the PULPINO core and the data memory.
+
+To add the cache to your design, you need to make two adjustments.
 
 First, you need to adjust your core_region file to properly proxy the signals
 between the Load-Store Unit and the Memory.
