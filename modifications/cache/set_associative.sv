@@ -71,7 +71,8 @@ module set_associative_cache #(
 
     replacement_policy #(
         .WAY_COUNT     (WAY_COUNT),
-        .SET_COUNT     (SET_COUNT)
+        .SET_COUNT     (SET_COUNT),
+        .POLICY        (0)
     ) U_replacement (
         .clk(clk),
         .reset(reset),
