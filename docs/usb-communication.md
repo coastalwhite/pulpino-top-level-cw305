@@ -54,6 +54,11 @@ between the two gives bytes.
 
 ## Protocol Pseudocode
 
+The communication protocol is implemented in both directions according to the
+following wave diagram.
+
+![Signal Diagram](./assets/CW305_Communication_Signal_Diagram.svg)
+
 ### External <> Pulpino
 
 ```python
