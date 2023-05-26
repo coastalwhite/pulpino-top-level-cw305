@@ -167,21 +167,19 @@ module set_associative_cache #(
     reg [$clog2(WAY_WORD_COUNT)-1:0] word_ctr;
     reg word_ctr_do_increase;
     reg word_ctr_do_reset;
-
-    reg [1:0] delay_ctr;
     
     localparam
-        NoRequest           = 4'b0000,
+        Idle                = 4'b0000,
         FindSet             = 4'b0001,
         FindBlock           = 4'b0010,
         SelectBlock         = 4'b0011,
         ReadMemReq          = 4'b0100,
         ReadMemWait         = 4'b0101,
         WriteCache          = 4'b0110,
-        WriteMemReq         = 4'b0111,
-        WriteMemWait        = 4'b1000,
+        WriteMem            = 4'b0111,
         Done                = 4'b1001,
-        WaySelectDelay      = 4'b1010;
+        ReadWaySelectDelay1 = 4'b1010,
+        ReadWaySelectDelay2 = 4'b1011;
 
     localparam
         CacheLineValid      = 1'b1,
@@ -203,7 +201,7 @@ module set_associative_cache #(
     integer i, j;
     always @ (posedge clk, posedge reset) begin
         if (reset) begin
-            CS       <= NoRequest;
+            CS       <= Idle;
 
             current_set   <= 6'b0;
             current_way <=  'b0;
@@ -229,8 +227,6 @@ module set_associative_cache #(
             core_rdata <= 32'b0;
 
             cache_we <= 1'b0;
-
-			delay_ctr <= 2'b11;
 
             word_ctr <= 32'b0;
         end
@@ -262,11 +258,6 @@ module set_associative_cache #(
 
             cache_we <= next_cache_we;
 
-            if (NS == WaySelectDelay)
-                delay_ctr <= delay_ctr - 1;
-            else
-                delay_ctr <= 2'b11;
-
             if (word_ctr_do_reset)
                 word_ctr <= 0;
             else
@@ -289,7 +280,7 @@ module set_associative_cache #(
         cache_valid_i, cache_tag_i, cache_line_i, cache_ww_enable_i,
         block_det_outs, block_det_valid,
         replacement_way, replacement_ready,
-        word_ctr, delay_ctr
+        word_ctr
      ) begin
         NS         = CS;
         
@@ -326,7 +317,7 @@ module set_associative_cache #(
         word_ctr_do_increase = 1'b0;
         
         case (CS)
-            NoRequest: begin
+            Idle: begin
                 next_set       = 6'b0;
                 next_way       =  'b0;
 
@@ -395,7 +386,7 @@ module set_associative_cache #(
 
                         // Cache hit
                         if (~proc_write_enable)
-                            NS = WaySelectDelay;
+                            NS = ReadWaySelectDelay1;
                         else
                             NS = WriteCache;
                     end
@@ -418,11 +409,12 @@ module set_associative_cache #(
                     end
                 endcase
             end
-            WaySelectDelay: begin
-                if (delay_ctr == 0) begin
-                    next_core_rdata = cache_line_o[32*proc_way_word +: 32];
-                    NS = Done;
-                end
+            ReadWaySelectDelay1: begin
+                NS = ReadWaySelectDelay2;
+            end
+            ReadWaySelectDelay2: begin
+                next_core_rdata = cache_line_o[32*proc_way_word +: 32];
+                NS = Done;
             end
 			ReadMemReq: begin
 				next_bs_req_do       = 1'b1;
@@ -475,19 +467,14 @@ module set_associative_cache #(
                 next_cache_line_i[proc_way_word*32 +: 32] = proc_data;
                 next_cache_ww_enable_i[proc_way_word] = 1'b1;
 
-                NS = WriteMemReq;
+                NS = WriteMem;
             end
-			WriteMemReq: begin
+			WriteMem: begin
 				next_bs_req_do       = 1'b1;
 				next_bs_write_enable = 1'b1;
                 next_bs_addr         = proc_addr;
 				next_bs_wdata        = cache_line_o[32*proc_way_word +: 32];
 
-                if (mem_rvalid_i) begin
-                    NS = WriteMemWait;
-                end
-			end
-			WriteMemWait: begin
                 if (mem_rvalid_i) begin
                     NS = Done;
                 end
@@ -498,7 +485,7 @@ module set_associative_cache #(
                 else
                     replacement_read    = 1'b1;
 
-                NS = NoRequest;
+                NS = Idle;
             end
         endcase
     end

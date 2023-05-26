@@ -1,0 +1,40 @@
+{
+  signal: [
+    {
+      name: 'clk',
+      wave: 'p.................',
+    },
+    {
+      name: 'req',
+      wave: '010...............',
+    },
+    {
+      name: 'done',
+      wave: '0...............10',
+    },
+    {
+      name: 'state',
+      wave: '32222.22.22.22.223',
+      data: [
+        'Idle',
+        'FS',
+        'FB',
+        'SB',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'Done',
+        'Idle',
+      ],
+    },
+  ],
+  foot: {
+    text: 'Read Cache Miss',
+    tock: 0,
+  },
+}

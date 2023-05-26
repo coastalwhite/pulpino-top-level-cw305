@@ -1,0 +1,42 @@
+{
+  signal: [
+    {
+      name: 'clk',
+      wave: 'p.....................',
+    },
+    {
+      name: 'req',
+      wave: '010...................',
+    },
+    {
+      name: 'done',
+      wave: '0...................10',
+    },
+    {
+      name: 'state',
+      wave: '32222.22.22.22.222..23',
+      data: [
+        'Idle',
+        'FS',
+        'FB',
+        'SB',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'RMQ',
+        'RMW',
+        'WC',
+        'WriteMem',
+        'Done',
+        'Idle',
+      ],
+    },
+  ],
+  foot: {
+    text: 'Write Cache Miss',
+    tock: 0,
+  },
+}

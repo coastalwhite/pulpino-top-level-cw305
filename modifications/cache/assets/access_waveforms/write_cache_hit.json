@@ -1,0 +1,34 @@
+{
+  signal: [
+    {
+      name: 'clk',
+      wave: 'p.........',
+    },
+    {
+      name: 'req',
+      wave: '010.......',
+    },
+    {
+      name: 'done',
+      wave: '0.......10',
+    },
+    {
+      name: 'state',
+      wave: '322222..23',
+      data: [
+        'Idle',
+        'FS',
+        'FB',
+        'SB',
+        'WC',
+        'WriteMem',
+        'Done',
+        'Idle',
+      ],
+    },
+  ],
+  foot: {
+    text: 'Write Cache Hit',
+    tock: 0,
+  },
+}

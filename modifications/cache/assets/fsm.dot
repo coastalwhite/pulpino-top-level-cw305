@@ -1,0 +1,28 @@
+digraph G {
+  Idle -> FindSet
+  FindSet -> FindBlock
+  FindBlock -> SelectBlock
+  SelectBlock -> SelectBlock [label="Replacement Policy Not Ready"]
+  SelectBlock -> ReadDelay [label="Read Hit"]
+  ReadDelay -> ReadDelay [label="Delay Unfinished"]
+  SelectBlock -> WriteCache [label="Write Hit"]
+  Done -> Idle [weight=0]
+  
+  subgraph read_memory {
+      SelectBlock -> ReadMemReq [label="Miss",weight=0]
+      ReadMemReq -> ReadMemWait
+      ReadMemWait -> ReadMemReq [label="Last Word Unreached"]
+      ReadMemWait -> Done [label="Read, Last Word Reached",weight=0]
+      ReadMemWait -> WriteCache [label="Write, Last Word Reached",weight=0]
+  }
+  
+  subgraph write_memory {
+      WriteCache -> WriteMemReq [weight=0]
+      WriteMem -> WriteMemReq [label="Request Unfinished"]
+      WriteMem -> Done [label="Request Finished",weight=0]
+  }
+  
+  ReadDelay -> Done
+
+  Idle [shape=diamond];
+}
