@@ -36,3 +36,13 @@ policy. There are currently 4 replacement policies available: FIFO, Random, LRU
 and MRU. All except the policy, can be set at the module instantiation. The
 policy can be set at the module instantiation of `replacement_policy` within the
 `set_associatve.sv` file.
+
+### Timing Diagrams
+
+An overview of the cache state diagram is given in [this DOT
+file](./cache/assets/fsm.dot).
+
+![](./cache/assets/access_waveforms/read_cache_hit.svg)
+![](./cache/assets/access_waveforms/write_cache_hit.svg)
+![](./cache/assets/access_waveforms/read_cache_miss.svg)
+![](./cache/assets/access_waveforms/write_cache_miss.svg)
