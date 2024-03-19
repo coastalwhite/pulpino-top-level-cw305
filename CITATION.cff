@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: Pulpino Top-Level CW305
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Gijs
+    family-names: Burghoorn
+    email: g.j.burghoorn@tudelft.nl
+    affiliation: Grenoble INP
+    orcid: 'https://orcid.org/0000-0001-9299-015X'
+repository-code: 'https://github.com/coastalwhite/pulpino-top-level-cw305'
+abstract: >-
+  A set of instructions, files and utilities to use the
+  PULPINO RISC-V on a ChipWhisperer 305 FPGA.
+keywords:
+  - RISC-V
+  - ChipWhisperer
+license: GPL-3.0
