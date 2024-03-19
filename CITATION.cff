@@ -10,6 +10,9 @@ authors:
     email: g.j.burghoorn@tudelft.nl
     affiliation: Grenoble INP
     orcid: 'https://orcid.org/0000-0001-9299-015X'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10837804
 repository-code: 'https://github.com/coastalwhite/pulpino-top-level-cw305'
 abstract: >-
   A set of instructions, files and utilities to use the
