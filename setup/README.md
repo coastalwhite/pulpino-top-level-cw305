@@ -41,7 +41,7 @@ terminal. Lastly, there are the steps to follow in [Vivado][vivado].
 7. Verify that you have the proper python version, by running `python
    --version`. This should be `2.7.18`. If it is not, rerun `pyenv shell
    2.7.18`.
-8. Run `./update-ips.sh`
+8. Run the `./update-ips.py` script from the pulpino repository.
 9. Open `fpga/ips/xilinx_fp_fma/tcl/run.tcl`.
    1. At line ~13, append ` -force` to the line.
    2. At line ~15, remove ` -version 7.0`
